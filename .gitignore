@@ -205,3 +205,8 @@ game/mscorlib.dll
 game/netstandard.dll
 game/WindowsBase.dll
 game/System.dll
+
+# DesktopVK spike local builds
+tools/DesktopVkSpike/bin/
+tools/DesktopVkSpike/obj/
+
