@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <StarDriveIsGameOrGfxProject>true</StarDriveIsGameOrGfxProject>
     <Platforms>x64</Platforms>
     <OutputType>Library</OutputType>
     <RootNamespace>SDGraphics</RootNamespace>
@@ -21,13 +21,14 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <!-- Preserve STARDIVE_* from StarDrive.Platform.props -->
+    <DefineConstants>$(DefineConstants);DEBUG;TRACE</DefineConstants>
     <DebugType>portable</DebugType>
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
     <Optimize>true</Optimize>
     <DebugType>portable</DebugType>
     <DebugSymbols>true</DebugSymbols>
@@ -76,10 +77,6 @@
                       ReferenceOutputAssembly="false" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="MonoGame.Framework.WindowsDX" Version="3.8.1.303" />
-    <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.1.303" />
-  </ItemGroup>
 
   <!-- Phase 2.6.A: dropped polyfill packages — System.Memory and
        System.Runtime.CompilerServices.Unsafe are built into net8.

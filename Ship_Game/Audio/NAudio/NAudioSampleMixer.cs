@@ -1,3 +1,4 @@
+#if STARDIVE_WINDOWSDX
 ﻿using System;
 using NAudio.Utils;
 using NAudio.Wave;
@@ -146,3 +147,5 @@ internal class NAudioSampleMixer : ISampleProvider, IDisposable
         return outputSamples;
     }
 }
+
+#endif

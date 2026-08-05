@@ -10,7 +10,6 @@ using Ship_Game.Ships;
 using Vector2 = SDGraphics.Vector2;
 using Rectangle = SDGraphics.Rectangle;
 using Ship_Game.Universe;
-using System.Windows.Forms;
 
 namespace Ship_Game
 {

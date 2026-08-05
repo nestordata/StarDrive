@@ -1,3 +1,4 @@
+#if STARDIVE_WINDOWSDX
 ﻿using System.ComponentModel;
 using System.Windows.Forms;
 using SDUtils;
@@ -167,3 +168,4 @@ namespace Ship_Game
         private LinkLabel githubIssues;
     }
 }
+#endif

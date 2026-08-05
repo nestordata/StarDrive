@@ -111,12 +111,7 @@ public sealed class ParticleVertexBuffer : IDisposable
         if (numParticles <= 0 || vbo == null)
             return;
 
-        // Restore the vertex buffer contents if the graphics device was lost.
-        if (vbo.IsContentLost)
-        {
-            vbo.SetData(Particles);
-        }
-        else
+        // IsContentLost is obsolete on MonoGame Native (always false) — skip restore branch.
         {
             // upload any pending particles data to the GPU
             int firstPending = FirstPending;

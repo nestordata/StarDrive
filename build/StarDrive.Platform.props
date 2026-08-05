@@ -1,0 +1,45 @@
+<Project>
+  <!--
+    Dual-host selection for StarDrive.
+
+    StarDrivePlatform:
+      - WindowsDX  → net8.0-windows + MonoGame.Framework.WindowsDX (community default)
+      - DesktopVK  → net8.0 + MonoGame.Framework.Native + Vulkan runtimes (Mac/Linux)
+
+    Default: WindowsDX on Windows hosts, DesktopVK everywhere else.
+    Override: /p:StarDrivePlatform=DesktopVK  (or WindowsDX)
+  -->
+  <PropertyGroup>
+    <StarDrivePlatform Condition="'$(StarDrivePlatform)' == '' AND $([MSBuild]::IsOSPlatform('Windows'))">WindowsDX</StarDrivePlatform>
+    <StarDrivePlatform Condition="'$(StarDrivePlatform)' == ''">DesktopVK</StarDrivePlatform>
+
+    <MonoGameVersionWindowsDX>3.8.1.303</MonoGameVersionWindowsDX>
+    <MonoGameVersionDesktopVK>3.8.5</MonoGameVersionDesktopVK>
+
+    <!-- Project roles (available before each .csproj body runs). -->
+    <StarDriveIsGameProject Condition="'$(MSBuildProjectName)' == 'StarDrive' OR '$(MSBuildProjectName)' == 'SDUnitTests'">true</StarDriveIsGameProject>
+    <StarDriveIsGameOrGfxProject Condition="'$(MSBuildProjectName)' == 'StarDrive' OR '$(MSBuildProjectName)' == 'SDGraphics' OR '$(MSBuildProjectName)' == 'SDUnitTests'">true</StarDriveIsGameOrGfxProject>
+    <StarDriveIsManagedLib Condition="'$(MSBuildProjectName)' == 'SDUtils' OR '$(MSBuildProjectName)' == 'SDGraphics'">true</StarDriveIsManagedLib>
+  </PropertyGroup>
+
+  <!-- Skip dual-host TFM rewriting for Roslyn analyzers / netstandard tools. -->
+  <PropertyGroup Condition="'$(IsRoslynComponent)' == 'true' OR '$(MSBuildProjectName)' == 'SDAnalyzers'">
+    <StarDriveSkipHostTfms>true</StarDriveSkipHostTfms>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(StarDriveSkipHostTfms)' != 'true' AND '$(StarDrivePlatform)' == 'WindowsDX'">
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms Condition="'$(StarDriveIsGameProject)' == 'true'">true</UseWindowsForms>
+    <DefineConstants>$(DefineConstants);STARDIVE_WINDOWSDX</DefineConstants>
+    <MonoGamePlatform Condition="'$(StarDriveIsGameOrGfxProject)' == 'true'">Windows</MonoGamePlatform>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(StarDriveSkipHostTfms)' != 'true' AND '$(StarDrivePlatform)' == 'DesktopVK'">
+    <TargetFramework>net8.0</TargetFramework>
+    <UseWindowsForms>false</UseWindowsForms>
+    <DefineConstants>$(DefineConstants);STARDIVE_DESKTOPVK</DefineConstants>
+    <MonoGamePlatform Condition="'$(StarDriveIsGameOrGfxProject)' == 'true'">DesktopVK</MonoGamePlatform>
+    <RuntimeIdentifier Condition="'$(StarDriveIsGameOrGfxProject)' == 'true' AND '$(RuntimeIdentifier)' == '' AND $([MSBuild]::IsOSPlatform('OSX'))">osx-arm64</RuntimeIdentifier>
+    <RuntimeIdentifier Condition="'$(StarDriveIsGameOrGfxProject)' == 'true' AND '$(RuntimeIdentifier)' == '' AND $([MSBuild]::IsOSPlatform('Linux'))">linux-x64</RuntimeIdentifier>
+  </PropertyGroup>
+</Project>

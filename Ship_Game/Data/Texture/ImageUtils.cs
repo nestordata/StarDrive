@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using Ship_Game.Platform;
 using Microsoft.Xna.Framework.Graphics;
 using Color = Microsoft.Xna.Framework.Color;
 using Rectangle = SDGraphics.Rectangle;
@@ -54,7 +55,7 @@ namespace Ship_Game.Data.Texture
             return colors;
         }
 
-        [DllImport("SDNative.dll")]
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)]
         static extern unsafe void ConvertBGRAtoRGBA(int width, int height, Color* rgbaImage);
 
         public static unsafe void ConvertToRGBA(int width, int height, Color[] bgraImage)
@@ -63,14 +64,14 @@ namespace Ship_Game.Data.Texture
                 ConvertBGRAtoRGBA(width, height, pColor);
         }
 
-        [DllImport("SDNative.dll")]
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)]
         static extern unsafe void CopyBGRAtoRGBA(int width, int height, Color* src, Color* dst);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         delegate void OnImageLoaded([MarshalAs(UnmanagedType.LPArray, SizeParamIndex=1)] Color[] color,
                                     int size, int width, int height);
 
-        [DllImport("SDNative.dll")]
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)]
         static extern IntPtr LoadPNGImage([MarshalAs(UnmanagedType.LPStr)] string filename,
                                           OnImageLoaded onLoaded);
 
@@ -209,7 +210,7 @@ namespace Ship_Game.Data.Texture
             }
         }
 
-        [DllImport("SDNative.dll")]
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)]
         static extern unsafe IntPtr SaveImageAsPNG(
             [MarshalAs(UnmanagedType.LPStr)] string filename, int width, int height, Color* rgbaImage);
 
@@ -227,7 +228,7 @@ namespace Ship_Game.Data.Texture
         }
 
 
-        [DllImport("SDNative.dll")]
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)]
         static extern unsafe IntPtr SaveImageAsDDS(
             [MarshalAs(UnmanagedType.LPStr)] string filename, int width, int height, Color* rgbaImage, DDSFlags flags);
 

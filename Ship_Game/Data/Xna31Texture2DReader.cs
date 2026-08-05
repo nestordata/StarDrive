@@ -26,8 +26,13 @@ namespace Ship_Game.Data
             if (Registered) return;
             Registered = true;
 
-            ContentTypeReaderManager.AddTypeCreator(Texture2DReaderName, () => new Xna31Texture2DReader());
-            ContentTypeReaderManager.AddTypeCreator(Texture3DReaderName, () => new Xna31Texture3DReader());
+            // MonoGame 3.8.5+ pre-registers built-in Texture2DReader / Texture3DReader in
+            // ContentTypeReaderManager's static ctor, and AddTypeCreator is append-only
+            // (skips if the key exists). Force-replace so XNA 3.1 Dxt3 SpriteFonts still
+            // decompress to SurfaceFormat.Color — otherwise DesktopVK hits
+            // Texture2D.ValidateParams (elementCount 131072 vs data size 524288).
+            ForceTypeCreator(Texture2DReaderName, () => new Xna31Texture2DReader());
+            ForceTypeCreator(Texture3DReaderName, () => new Xna31Texture3DReader());
 
             // Phase 3.4 step 5 / TODO Post-1.60: XNA 3.1 VertexDeclaration binary format
             // reader. Empirically decoded — see Xna31VertexDeclarationReader. Originally
@@ -39,9 +44,24 @@ namespace Ship_Game.Data
             // XNA-3.1-baked Model XNB. Note: VertexDeclaration alone is not enough —
             // the Model XNB itself has structural drift, so a full path also needs an
             // Xna31ModelReader (deferred Phase 4).
-            ContentTypeReaderManager.AddTypeCreator(
+            ForceTypeCreator(
                 "Microsoft.Xna.Framework.Content.VertexDeclarationReader",
                 () => new Xna31VertexDeclarationReader());
+        }
+
+        static void ForceTypeCreator(string typeString, Func<ContentTypeReader> create)
+        {
+            // Prefer overwrite: MG 3.8.5+ already seeded typeCreators for common readers.
+            FieldInfo field = typeof(ContentTypeReaderManager).GetField(
+                "typeCreators", BindingFlags.Static | BindingFlags.NonPublic);
+            if (field?.GetValue(null) is System.Collections.IDictionary dict)
+            {
+                dict[typeString] = create;
+                return;
+            }
+
+            // Fallback for older MonoGame where the field name/shape differs.
+            ContentTypeReaderManager.AddTypeCreator(typeString, create);
         }
 
         // Shared translation table — XNA 3.1 SurfaceFormat int → MonoGame 3.8 SurfaceFormat.

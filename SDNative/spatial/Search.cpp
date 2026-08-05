@@ -1,6 +1,11 @@
 #include "Search.h"
 #include "ObjectCollection.h"
 #include <algorithm>
+#include <cstring>
+#ifndef _MSC_VER
+#include <alloca.h>
+#define _alloca alloca
+#endif
 
 namespace spatial
 {

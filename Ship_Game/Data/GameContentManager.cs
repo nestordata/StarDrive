@@ -476,7 +476,7 @@ namespace Ship_Game.Data
                     return cachedFx;
 
                 string mgfxoRel = asset.RelPathWithExt.Substring(0, asset.RelPathWithExt.Length - 4) + ".mgfxo";
-                string mgfxoPath = RawContentLoader.GetContentPath(mgfxoRel);
+                string mgfxoPath = Shader.ResolveCompiledPath(RawContentLoader.GetContentPath(mgfxoRel));
                 if (File.Exists(mgfxoPath))
                 {
                     byte[] mgfxBytes = File.ReadAllBytes(mgfxoPath);
@@ -706,12 +706,16 @@ namespace Ship_Game.Data
             // Effects must now be precompiled to MGFX via the MonoGame Effect Compiler
             // (mgfxc) at build time, then loaded as raw bytes through the Effect ctor.
             // For .fx requests, look for a sibling .mgfx with the same base name.
-            string mgfxPath = asset.RelPathWithExt.EndsWith(".fx", StringComparison.OrdinalIgnoreCase)
+            // DesktopVK prefers Content/.../Vulkan/<name>.mgfx{o}.
+            string mgfxRel = asset.RelPathWithExt.EndsWith(".fx", StringComparison.OrdinalIgnoreCase)
                 ? asset.RelPathWithExt.Substring(0, asset.RelPathWithExt.Length - 3) + ".mgfx"
                 : asset.RelPathWithExt;
+            string mgfxPath = Shader.ResolveCompiledPath(RawContentLoader.GetContentPath(mgfxRel));
 
-            FileInfo file = ResourceManager.GetModOrVanillaFile(mgfxPath);
-            if (file == null)
+            FileInfo file = File.Exists(mgfxPath)
+                ? new FileInfo(mgfxPath)
+                : ResourceManager.GetModOrVanillaFile(mgfxRel);
+            if (file == null || !file.Exists)
                 throw new FileNotFoundException($"LoadEffect {asset.RelPathWithExt}: no precompiled MGFX at '{mgfxPath}'");
 
             if (DebugAssetLoading) Log.Write(ConsoleColor.Cyan, $"LoadEffect {file.RelPath()}");

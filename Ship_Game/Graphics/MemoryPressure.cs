@@ -1,3 +1,4 @@
+#if STARDIVE_WINDOWSDX
 using System;
 using System.Reflection;
 using Microsoft.Xna.Framework.Graphics;
@@ -119,3 +120,5 @@ public static class MemoryPressure
         }
     }
 }
+
+#endif

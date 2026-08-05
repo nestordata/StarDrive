@@ -8,6 +8,13 @@ namespace SDGraphics;
 /// </summary>
 public static class RadMath
 {
+#if STARDIVE_WINDOWSDX
+    const string NativeLibName = "SDNative.dll";
+    const CallingConvention NativeCC = CallingConvention.StdCall;
+#else
+    const string NativeLibName = "SDNative";
+    const CallingConvention NativeCC = CallingConvention.Cdecl;
+#endif
     public const double PID       = 3.14159265358979;        // 180 degrees
     public const double TwoPID    = 3.14159265358979 * 2.0;  // 360 degrees
     public const double HalfPID   = 3.14159265358979 * 0.5;  // 90 degrees
@@ -87,11 +94,11 @@ public static class RadMath
     }
 
     // Converts rotation radians into a 2D direction vector
-    [DllImport("SDNative.dll")]
+    [DllImport(NativeLibName, CallingConvention = NativeCC)]
     public static extern Vector2 RadiansToDirection(this float radians);
 
     // Converts rotation radians into a 2D direction vector
-    [DllImport("SDNative.dll", EntryPoint = "RadiansToDirectionD")]
+    [DllImport(NativeLibName, EntryPoint = "RadiansToDirectionD", CallingConvention = NativeCC)]
     public static extern Vector2d RadiansToDirection(this double radians);
 
     // Converts rotation radians into a 3D direction vector, with Z = 0
@@ -254,19 +261,19 @@ public static class RadMath
     }
 
     // Takes self and rotates it around the center pivot by some radians
-    [DllImport("SDNative.dll")]
+    [DllImport(NativeLibName, CallingConvention = NativeCC)]
     public static extern Vector2 RotateAroundPoint(this in Vector2 self, in Vector2 center, float radians);
 
     // Takes self and rotates it around the center pivot by some radians
-    [DllImport("SDNative.dll", EntryPoint = "RotateAroundPointD")]
+    [DllImport(NativeLibName, EntryPoint = "RotateAroundPointD", CallingConvention = NativeCC)]
     public static extern Vector2d RotateAroundPoint(this in Vector2d self, in Vector2d center, double radians);
 
     // Takes self and rotates it around world center [0,0] by some radians
-    [DllImport("SDNative.dll")]
+    [DllImport(NativeLibName, CallingConvention = NativeCC)]
     public static extern Vector2 RotatePoint(this Vector2 self, float radians);
 
     // This only deals with a local orbit offset, independent from orbit center
     // So the local center is always [0,0] and the current [offset] is relative to that
-    [DllImport("SDNative.dll")]
+    [DllImport(NativeLibName, CallingConvention = NativeCC)]
     public static extern Vector2 OrbitalOffsetRotate(Vector2 offset, float orbitRadius, float radians);
 }

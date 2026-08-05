@@ -1,16 +1,19 @@
 using System;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
 using System.Threading;
-using System.Windows.Forms;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using SDUtils;
 using Ship_Game.Audio;
 using Ship_Game.Data;
+using Ship_Game.Platform;
 using SynapseGaming.LightingSystem.Core;
 using Vector2 = SDGraphics.Vector2;
+#if STARDIVE_WINDOWSDX
+using System.Drawing;
+using System.Windows.Forms;
+#endif
 
 namespace Ship_Game
 {
@@ -43,7 +46,9 @@ namespace Ship_Game
         /// </summary>
         public float TotalElapsed { get; protected set; }
 
+#if STARDIVE_WINDOWSDX
         public Form Form => (Form)Control.FromHandle(Window.Handle);
+#endif
 
         /// <summary>
         /// TRUE if GraphicsDevice is not null or disposed
@@ -60,11 +65,24 @@ namespace Ship_Game
 
             Graphics = new GraphicsDeviceManager(this)
             {
-                PreferredDepthStencilFormat = DepthFormat.Depth16, // only supported: Depth24Stencil8,
+                // Depth16 is fine on WindowsDX; DesktopVK/MoltenVK needs a stencil-capable format.
+#if STARDIVE_DESKTOPVK
+                PreferredDepthStencilFormat = DepthFormat.Depth24Stencil8,
+#else
+                PreferredDepthStencilFormat = DepthFormat.Depth16,
+#endif
             };
             Graphics.PreferMultiSampling = true;
             Graphics.GraphicsProfile = GraphicsProfile.HiDef;
+#if STARDIVE_DESKTOPVK
+            // Do NOT ApplyChanges() here. On DesktopVK, that creates the Vulkan device via
+            // SDL_Vulkan_GetInstanceExtensions before Game.Run() has created an SDL window,
+            // which null-derefs inside libmgruntime (MGG_GraphicsSystem_Create).
+            // MonoGame creates the device on Run() once the window exists — matching DesktopVkSpike.
+            IsMouseVisible = true;
+#else
             Graphics.ApplyChanges();
+#endif
         }
 
         void UpdateRendererPreferences(ref GraphicsSettings settings)
@@ -141,34 +159,10 @@ namespace Ship_Game
                 settings.Width  = 800;
                 settings.Height = 600;
             }
-            var form = (Form)Control.FromHandle(Window.Handle);
             if (Debugger.IsAttached && settings.Mode == WindowMode.Fullscreen)
                 settings.Mode = WindowMode.Borderless;
 
-            // FormBorderStyle MUST be set BEFORE PreferredBackBuffer*: changing
-            // the border fires a WinForms SizeChanged event, and MonoGame
-            // WindowsDX's SizeChanged handler clobbers PreferredBackBufferWidth
-            // /Height with the form's current ClientSize (the Phase 2.2 trap
-            // documented below). For Borderless that wasn't fatal — the
-            // form.ClientSize assignment further down re-fires SizeChanged with
-            // the right values. Fullscreen skips that block, so the clobber
-            // stuck and ToggleFullScreen() entered hardware mode at the
-            // wrong resolution.
-            //
-            // Fullscreen also needs Border=None: MonoGame's exclusive fullscreen
-            // hides the form visually, but the underlying WinForms client-area
-            // origin is still offset by the title-bar height. Mouse-coord
-            // transforms clamp to client area, producing a ~25px dead zone at
-            // the top — invisible on the main menu, fatal on the universe HUD
-            // where interactive elements sit at Y=0. Only surfaces outside the
-            // debugger because Debugger.IsAttached above silently downgrades
-            // Fullscreen to Borderless for VS launches.
-            switch (settings.Mode)
-            {
-                case WindowMode.Windowed:   form.FormBorderStyle = FormBorderStyle.Fixed3D; break;
-                case WindowMode.Borderless: form.FormBorderStyle = FormBorderStyle.None;    break;
-                case WindowMode.Fullscreen: form.FormBorderStyle = FormBorderStyle.None;    break;
-            }
+            PlatformServices.WindowChrome.ApplyWindowMode(Window, settings.Mode, settings.Width, settings.Height);
 
             Graphics.PreferredBackBufferWidth = settings.Width;
             Graphics.PreferredBackBufferHeight = settings.Height;
@@ -181,54 +175,21 @@ namespace Ship_Game
             else if (settings.Mode == WindowMode.Fullscreen && !Graphics.IsFullScreen)
             {
                 // Entering fullscreen can fail with DXGI_ERROR_NOT_CURRENTLY_AVAILABLE
-                // (0x887A0022) when another app holds exclusive fullscreen, when the
-                // display is mid-transition (HDR toggle, multi-monitor reconfigure),
-                // when Steam Overlay's DXGI hooks intercept at a bad moment, or when
-                // the window isn't fully realized yet during Initialize(). One retry
-                // with a 500ms gap covers the window-realization race (the most
-                // recoverable case); the other causes are persistent and fall through
-                // to the Borderless fallback. Borderless gives the same visual result
-                // for almost every user and doesn't need exclusive DXGI ownership.
+                // on WindowsDX; DesktopVK uses the same retry helper (HRESULT may differ).
                 if (!TryEnterFullScreen(maxAttempts: 2, retryDelayMs: 500))
                 {
                     settings.Mode = WindowMode.Borderless;
-                    // FormBorderStyle is already None from the Fullscreen case above,
-                    // which matches what Borderless wants — no border-restyle needed.
-                    // The "if (settings.Mode != WindowMode.Fullscreen)" block below
-                    // will now run and size/center the form correctly.
                 }
             }
 
-            // Phase 2.2: in MonoGame WindowsDX 3.8 the WinForms platform binds the
-            // backbuffer size to the form's ClientSize via a SizeChanged handler. If we
-            // call ApplyChanges() BEFORE the form has been resized, the backbuffer stays
-            // at MonoGame's 800x480 default (the SizeChanged event hasn't fired yet to
-            // override the preferred values). Result: a tiny 800x480 backbuffer
-            // presented in the corner of the oversized form. Resize the form FIRST,
-            // then call ApplySettings so the backbuffer tracks the form's ClientSize.
             if (settings.Mode != WindowMode.Fullscreen)
-            {
-                form.WindowState = FormWindowState.Normal;
-                form.ClientSize = new Size(settings.Width, settings.Height);
-
-                // set form to the center of the primary screen
-                var bounds = Screen.PrimaryScreen.Bounds;
-                Size size = bounds.Size;
-                var pt = new System.Drawing.Point(
-                    size.Width / 2 - settings.Width / 2,
-                    size.Height / 2 - settings.Height / 2);
-
-                // but also make sure that we stay inside the screen, otherwise XNA mouse cursor
-                // position reporting goes crazy
-                if (pt.X < bounds.Left) pt.X = bounds.Left;
-                if (pt.Y < bounds.Top) pt.Y = bounds.Top;
-                form.Location = pt;
-            }
+                PlatformServices.WindowChrome.CenterWindow(Window, settings.Width, settings.Height);
 
             bool deviceChanged = ApplySettings(ref settings);
 
             PresentationParameters pp = GraphicsDevice.PresentationParameters;
-            Log.Write(ConsoleColor.Cyan, $"ApplyGraphics: backbuffer={pp.BackBufferWidth}x{pp.BackBufferHeight} form={form.ClientSize.Width}x{form.ClientSize.Height}");
+            Log.Write(ConsoleColor.Cyan,
+                $"ApplyGraphics: backbuffer={pp.BackBufferWidth}x{pp.BackBufferHeight} mode={settings.Mode}");
 
             LastAppliedSettings = settings;
             return deviceChanged;

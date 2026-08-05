@@ -77,10 +77,10 @@ internal sealed class SpriteVertexBuffer : IDisposable
 
         if (FirstPending != Count)
         {
-            // Restore the vertex buffer contents if the graphics device was lost.
-            // Or just send all data if numPending == Size
+            // Send all data if the ring buffer wrapped (numPending == Size).
+            // IsContentLost is obsolete on MonoGame Native and always false.
             int numPending = Count - FirstPending;
-            if (vbo.IsContentLost || numPending == Size)
+            if (numPending == Size)
             {
                 vbo.SetData(Quads);
             }

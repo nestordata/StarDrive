@@ -1,8 +1,10 @@
 using System;
 using System.Globalization;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Microsoft.Xna.Framework;
+using Ship_Game.Platform;
 
 namespace Ship_Game;
 
@@ -14,8 +16,21 @@ internal static class Program
     public const int NATIVE_DLL_LOAD_FAILURE = -4;
     public const int WIN_VERSION_TOO_OLD = -5;
 
+#if STARDIVE_WINDOWSDX
     [DllImport("user32.dll", CharSet = CharSet.Unicode, EntryPoint = "MessageBoxW")]
     static extern int Win32MessageBox(IntPtr hWnd, string text, string caption, uint type);
+#endif
+
+    static void ShowNativeError(string caption, string message)
+    {
+#if STARDIVE_WINDOWSDX
+        const uint MB_OK = 0x0;
+        const uint MB_ICONERROR = 0x10;
+        Win32MessageBox(IntPtr.Zero, message, caption, MB_OK | MB_ICONERROR);
+#else
+        PlatformServices.Dialogs.ShowError(caption, message);
+#endif
+    }
 
     // Set by --apply-patch=<version> CLI arg. AutoPatcher's pre-elevation pass
     // (non-elevated download + unzip) writes a PendingPatch.json marker, then
@@ -225,14 +240,19 @@ internal static class Program
     {
         try
         {
-            NativeLibrary.Load("SDNative.dll", typeof(Program).Assembly, null);
+            string lib = NativeLib.Name;
+#if STARDIVE_DESKTOPVK
+            // Unix: try libSDNative.dylib / libSDNative.so via default loader search.
+            if (!NativeLibrary.TryLoad(lib, typeof(Program).Assembly, null, out _))
+                NativeLibrary.Load("lib" + lib, typeof(Program).Assembly, null);
+#else
+            NativeLibrary.Load(lib, typeof(Program).Assembly, null);
+#endif
         }
         catch (Exception ex)
         {
-            const uint MB_OK = 0x0;
-            const uint MB_ICONERROR = 0x10;
             string message =
-                "StarDrive cannot start because the required native library 'SDNative.dll' could not be loaded.\n\n" +
+                $"StarDrive cannot start because the required native library '{NativeLib.Name}' could not be loaded.\n\n" +
                 "This is most often caused by Windows security policies blocking the file:\n" +
                 "  • Smart App Control (Windows 11)\n" +
                 "  • Windows Defender Application Control (WDAC) or AppLocker\n" +
@@ -245,7 +265,7 @@ internal static class Program
                 "Need help? Join our Discord server (link is on the game release page) and we'll help you sort it out.\n\n" +
                 "Technical details:\n" + ex.Message;
 
-            Win32MessageBox(IntPtr.Zero, message, "StarDrive — Native library blocked", MB_OK | MB_ICONERROR);
+            ShowNativeError("StarDrive — Native library blocked", message);
             Environment.Exit(NATIVE_DLL_LOAD_FAILURE);
         }
     }
@@ -253,6 +273,15 @@ internal static class Program
     [STAThread]
     static void Main(string[] args)
     {
+        // Finder/.app launches often leave CWD as $HOME. Prefer the apphost directory
+        // (flat publish, or Contents/Resources/game via the macOS launcher stub).
+        string baseDir = AppContext.BaseDirectory;
+        if (!string.IsNullOrEmpty(baseDir))
+        {
+            try { Directory.SetCurrentDirectory(baseDir); }
+            catch { /* best-effort */ }
+        }
+
         AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
         AppDomain.CurrentDomain.ProcessExit        += CurrentDomain_ProcessExit;
         Thread.CurrentThread.CurrentCulture   = CultureInfo.InvariantCulture;
@@ -260,6 +289,7 @@ internal static class Program
         CultureInfo.DefaultThreadCurrentCulture   = CultureInfo.InvariantCulture;
         CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
 
+        PlatformServices.Initialize();
         EnsureNativeDependenciesLoadable();
 
         try
@@ -267,7 +297,13 @@ internal static class Program
             // WARNING: This must be called before ANY Log calls
             // @note This will override and initialize global system settings
             GlobalStats.LoadConfig();
+#if STARDIVE_DESKTOPVK
+            // Cross-platform fork: no Sentry / auto GitHub issue filing while porting.
+            GlobalStats.AutoErrorReport = false;
+            Log.Initialize(enableSentry: false, showHeader: true);
+#else
             Log.Initialize(enableSentry: true, showHeader: true);
+#endif
             Thread.CurrentThread.Name = "Main Thread";
             Log.AddThreadMonitor();
 
@@ -310,8 +346,6 @@ internal static class Program
 
     static void HandleUnsupportedWindowsVersion(EntryPointNotFoundException ex)
     {
-        const uint MB_OK = 0x0;
-        const uint MB_ICONERROR = 0x10;
         string message =
             "StarDrive cannot start because your version of Windows is missing APIs the\n" +
             "MonoGame 3.8 renderer requires.\n\n" +
@@ -327,7 +361,7 @@ internal static class Program
         // Log once so we keep visibility on how many players this affects;
         // Log.Error has built-in rate limiting so repeat crashes won't flood Sentry.
         Log.Error($"Unsupported Windows version: {ex.Message}");
-        Win32MessageBox(IntPtr.Zero, message, "StarDrive — Windows version too old", MB_OK | MB_ICONERROR);
+        ShowNativeError("StarDrive — Windows version too old", message);
         Environment.Exit(WIN_VERSION_TOO_OLD);
     }
 }

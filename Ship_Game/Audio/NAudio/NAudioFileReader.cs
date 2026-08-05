@@ -1,3 +1,4 @@
+#if STARDIVE_WINDOWSDX
 ﻿using System;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
@@ -242,3 +243,5 @@ internal class NAudioFileReader : WaveStream, ISampleProvider, IDisposable
         base.Dispose(disposing);
     }
 }
+
+#endif

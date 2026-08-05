@@ -6,8 +6,6 @@ using SDUtils;
 using Rectangle = SDGraphics.Rectangle;
 using Point = SDGraphics.Point;
 using Color = Microsoft.Xna.Framework.Color;
-using System.Windows.Forms;
-using System.Drawing.Drawing2D;
 
 namespace Ship_Game
 {

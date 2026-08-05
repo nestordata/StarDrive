@@ -1,11 +1,18 @@
 using System;
-using System.Configuration;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
 using SDGraphics;
 using SDUtils;
 using SynapseGaming.LightingSystem.Core;
+#if STARDIVE_WINDOWSDX
+using System.Configuration;
+#else
+using Ship_Game.Platform.DesktopVk;
+using Configuration = Ship_Game.Platform.DesktopVk.SimpleConfiguration;
+using ConfigurationManager = Ship_Game.Platform.DesktopVk.SimpleConfigurationManager;
+using ConfigurationSaveMode = System.Object; // unused sentinel; Save/SaveAs overloads ignore mode
+#endif
 
 namespace Ship_Game;
 
@@ -473,9 +480,18 @@ public static class GlobalStats
     {
         try
         {
-            var bounds = System.Windows.Forms.Screen.PrimaryScreen.Bounds;
+#if STARDIVE_DESKTOPVK
+            // Never touch GraphicsAdapter / MonoGame display APIs before Game.Run on DesktopVK.
+            // Doing so pre-inits SDL/Vulkan and SIGSEGVs in SDL_Vulkan_GetInstanceExtensions
+            // (null window) when the real device is created. Use a conservative default; the
+            // user can change resolution in Options after the window exists.
+            int w = 1920;
+            int h = 1080;
+#else
+            var bounds = Ship_Game.Platform.PlatformServices.Display.PrimaryBounds;
             int w = Math.Min(bounds.Width, 2560);
             int h = Math.Min(bounds.Height, 1440);
+#endif
             var settings = exeCfg.AppSettings.Settings;
             if (settings["XRES"] != null) settings["XRES"].Value = w.ToString();
             if (settings["YRES"] != null) settings["YRES"].Value = h.ToString();
@@ -489,6 +505,7 @@ public static class GlobalStats
     static Configuration OpenUserConfiguration()
     {
         string configFile = Dir.StarDriveAppData + "/StarDrive.user.config";
+#if STARDIVE_WINDOWSDX
         Configuration exeCfg = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
 
         // if the AppData config file doesn't exist, create one based on current defaults
@@ -502,6 +519,15 @@ public static class GlobalStats
         {
             ExeConfigFilename = configFile,
         }, ConfigurationUserLevel.None);
+#else
+        Configuration exeCfg = SimpleConfiguration.OpenExeConfiguration();
+        if (!File.Exists(configFile))
+        {
+            AutoDetectScreenResolution(exeCfg);
+            exeCfg.SaveAs(configFile);
+        }
+        Configuration roamingCfg = SimpleConfiguration.OpenMapped(configFile);
+#endif
 
         // check if base version has changed, which will require us to overwrite the settings
         int baseVersion = 1;
@@ -519,12 +545,13 @@ public static class GlobalStats
             // overwrite the version
             roamingSettings["ConfigVersion"].Value = exeSettings["ConfigVersion"].Value;
 
-            // force the exe config to save itself,
-            // this should synchronize any changed fields
+#if STARDIVE_WINDOWSDX
             roamingCfg.Save(ConfigurationSaveMode.Full);
-
-            // force all Configurations to reload their appSettings
             ConfigurationManager.RefreshSection("appSettings");
+#else
+            roamingCfg.Save();
+            ConfigurationManager.RefreshSection("appSettings");
+#endif
 
             GetSetting(roamingCfg, "ConfigVersion", ref ConfigVersion);
             if (baseVersion != ConfigVersion)

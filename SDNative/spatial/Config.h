@@ -1,17 +1,30 @@
 #pragma once
+#include <cstddef>
 
 #ifndef SPATIAL_API
-#define SPATIAL_API __declspec(dllexport)
+#  if defined(_MSC_VER)
+#    define SPATIAL_API __declspec(dllexport)
+#  else
+#    define SPATIAL_API __attribute__((visibility("default")))
+#  endif
 #endif
 
 #ifndef SPATIAL_C_API
-#define SPATIAL_C_API extern "C" __declspec(dllexport)
+#  if defined(_MSC_VER)
+#    define SPATIAL_C_API extern "C" __declspec(dllexport)
+#  else
+#    define SPATIAL_C_API extern "C" __attribute__((visibility("default")))
+#  endif
 #endif
 
 /// Calling convention of Spatial C-interface
-/// By default it's set to stdcall because we mostly interface with C#
+/// stdcall on MSVC (C# default); cdecl elsewhere (NativeLib.CallConv)
 #ifndef SPATIAL_CC
-#define SPATIAL_CC __stdcall
+#  if defined(_MSC_VER)
+#    define SPATIAL_CC __stdcall
+#  else
+#    define SPATIAL_CC
+#  endif
 #endif
 
 //// @note Some strong hints that some functions are merely wrappers, so should be forced inline

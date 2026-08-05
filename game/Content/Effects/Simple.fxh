@@ -1,6 +1,7 @@
 //-----------------------------------------------------------------------------
 // Simple.fxh
 // Defines a [Position, Color, Coords] type of shader with some common variables
+// DesktopVK (mgfxc /Profile:Vulkan) predefines VULKAN and requires SM6 + modern HLSL.
 //-----------------------------------------------------------------------------
 
 
@@ -20,9 +21,9 @@ struct SimpleVSInput
  */
 struct SimpleVSOutput
 {
-    float4 Position : POSITION0;
+    float4 Position : SV_POSITION;
     float4 Color : COLOR0;
-    float2 TextureCoordinate : COLOR1;
+    float2 TextureCoordinate : TEXCOORD0;
 };
 
 
@@ -41,9 +42,26 @@ float4 Color;
 /**
  * Texture and sampler information
  */
-texture Texture;
+#if VULKAN
+Texture2D Texture;
 bool UseTexture;
 
+SamplerState ClampSampler
+{
+    Filter = Linear;
+    AddressU = Clamp;
+    AddressV = Clamp;
+};
+
+SamplerState WrapSampler
+{
+    Filter = Linear;
+    AddressU = Wrap;
+    AddressV = Wrap;
+};
+#else
+texture Texture;
+bool UseTexture;
 
 // simple sampler with some default settings
 sampler ClampSampler = sampler_state
@@ -65,6 +83,7 @@ sampler WrapSampler = sampler_state
     AddressU = Wrap;
     AddressV = Wrap;
 };
+#endif
 
 
 /**
@@ -83,11 +102,15 @@ SimpleVSOutput SimpleVertexShader(SimpleVSInput input)
 /**
  * A simple pixel shading function
  */
-float4 SimplePixelShader(SimpleVSOutput input) : COLOR0
+float4 SimplePixelShader(SimpleVSOutput input) : SV_TARGET
 {
     if (UseTexture)
     {
+#if VULKAN
+        return Texture.Sample(ClampSampler, input.TextureCoordinate) * input.Color;
+#else
         return tex2D(ClampSampler, input.TextureCoordinate) * input.Color;
+#endif
     }
     else
     {

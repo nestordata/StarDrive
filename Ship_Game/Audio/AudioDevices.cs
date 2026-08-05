@@ -1,3 +1,4 @@
+#if STARDIVE_WINDOWSDX
 ﻿using System;
 using System.Collections.Generic;
 using NAudio.CoreAudioApi;
@@ -271,3 +272,4 @@ public sealed class AudioDevices : IDisposable
         }
     }
 }
+#endif

@@ -6,7 +6,10 @@ using System.Linq;
 using System.Security.Principal;
 using System.Text.Json;
 using System.Threading;
+#if STARDIVE_WINDOWSDX
 using System.Windows.Forms;
+#endif
+using Ship_Game.Platform;
 using SDUtils;
 using Color = Microsoft.Xna.Framework.Color;
 
@@ -255,9 +258,11 @@ internal class AutoPatcher : PopupWindow
 
             var psi = new System.Diagnostics.ProcessStartInfo
             {
-                FileName        = Application.ExecutablePath,
+                FileName        = PlatformServices.App.ExecutablePath,
                 UseShellExecute = true,    // required for Verb = "runas"
+                #if STARDIVE_WINDOWSDX
                 Verb            = "runas", // triggers the Windows UAC prompt
+#endif
                 Arguments       = argString,
             };
 
@@ -272,7 +277,7 @@ internal class AutoPatcher : PopupWindow
 
             Thread.Sleep(500); // give the elevated instance a moment to claim the window
             Program.RunCleanup();
-            Application.Exit();
+            PlatformServices.App.RequestExit();
         }
         catch (System.ComponentModel.Win32Exception ex)
         {
@@ -855,24 +860,23 @@ internal class AutoPatcher : PopupWindow
             Environment.GetCommandLineArgs().Skip(1)
                 .Where(a => !a.StartsWith("--apply-patch", StringComparison.OrdinalIgnoreCase)));
 
-        Application.Exit();
+        PlatformServices.App.RequestExit();
         try
         {
-            System.Diagnostics.Process.Start(Application.ExecutablePath, args);
+            System.Diagnostics.Process.Start(PlatformServices.App.ExecutablePath, args);
         }
         catch (Exception ex)
         {
             // Log is closed; surface via MessageBox so the user knows the
             // patch applied but the relaunch failed (AV quarantined the exe,
             // bad path, etc.) and they need to relaunch manually.
-            System.Windows.Forms.MessageBox.Show(
-                $"Patch was installed, but restarting the game failed:\n{ex.Message}\n\nPlease relaunch StarDrive manually.",
+            PlatformServices.Dialogs.ShowInfo(
                 "StarDrive — Restart failed",
-                System.Windows.Forms.MessageBoxButtons.OK,
-                System.Windows.Forms.MessageBoxIcon.Warning);
+                $"Patch was installed, but restarting the game failed:\n{ex.Message}\n\nPlease relaunch StarDrive manually.");
         }
     }
 
+    #if STARDIVE_WINDOWSDX
     static bool IsInRole(WindowsBuiltInRole role)
     {
         // Set the security policy context to windows security
@@ -883,4 +887,8 @@ internal class AutoPatcher : PopupWindow
 
         return principal.IsInRole(role);
     }
+#else
+    static bool IsInRole(WindowsBuiltInRole role) => false;
+#endif
+
 }

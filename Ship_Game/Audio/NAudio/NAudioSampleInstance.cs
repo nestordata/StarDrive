@@ -1,3 +1,4 @@
+#if STARDIVE_WINDOWSDX
 ﻿using System;
 using NAudio.Wave;
 
@@ -158,3 +159,5 @@ internal class NAudioSampleInstance : ISampleProvider, IAudioInstance, IDisposab
         return count;
     }
 }
+
+#endif

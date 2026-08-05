@@ -82,14 +82,27 @@ namespace SDNative
         string ErrorStr;
         load_buffer Data;
 
-        bool LoadFromFile(const wchar_t* filename);
+        bool LoadFromFile(const sd_wchar* filename);
         bool Error(string err);
     };
 
-    extern "C" {
-        __declspec(dllexport) ShipData* __stdcall CreateShipDataParser(const wchar_t* filename);
-        __declspec(dllexport) void __stdcall DisposeShipDataParser(ShipData* data);
-    }
+#ifndef SPATIAL_C_API
+#  if defined(_MSC_VER)
+#    define SPATIAL_C_API extern "C" __declspec(dllexport)
+#  else
+#    define SPATIAL_C_API extern "C" __attribute__((visibility("default")))
+#  endif
+#endif
+#ifndef SPATIAL_CC
+#  if defined(_MSC_VER)
+#    define SPATIAL_CC __stdcall
+#  else
+#    define SPATIAL_CC
+#  endif
+#endif
+
+    SPATIAL_C_API ShipData* SPATIAL_CC CreateShipDataParser(const sd_wchar* filename);
+    SPATIAL_C_API void SPATIAL_CC DisposeShipDataParser(ShipData* data);
 
 
     ////////////////////////////////////////////////////////////////////////////////////

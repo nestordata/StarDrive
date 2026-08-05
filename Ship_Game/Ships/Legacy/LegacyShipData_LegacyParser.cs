@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using Ship_Game.Platform;
 using Ship_Game.Gameplay;
 using Vector2 = SDGraphics.Vector2;
 using Vector3 = SDGraphics.Vector3;
@@ -185,11 +186,11 @@ namespace Ship_Game.Ships.Legacy
             public readonly CStrView ErrorMessage;
         }
 
-        [DllImport("SDNative.dll")]
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)]
         static extern unsafe CShipDataParser* CreateShipDataParser(
                                 [MarshalAs(UnmanagedType.LPWStr)] string filename);
 
-        [DllImport("SDNative.dll")]
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)]
         static extern unsafe void DisposeShipDataParser(CShipDataParser* parser);
 
         /////////////////////////

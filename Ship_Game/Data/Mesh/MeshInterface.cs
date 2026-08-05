@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using Ship_Game.Platform;
 using Microsoft.Xna.Framework.Graphics;
 using SynapseGaming.LightingSystem.Core;
 using SynapseGaming.LightingSystem.Effects.Forward;
@@ -297,37 +298,37 @@ namespace Ship_Game.Data.Mesh
 
         /////////////////////////////////////////////////////////////////////////////
 
-        [DllImport("SDNative.dll")] protected static extern unsafe
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)] protected static extern unsafe
             SdMesh* SDMeshOpen([MarshalAs(UnmanagedType.LPWStr)] string fileName);
 
-        [DllImport("SDNative.dll")] protected static extern unsafe
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)] protected static extern unsafe
             void SDMeshClose(SdMesh* mesh);
 
-        [DllImport("SDNative.dll")] protected static extern unsafe
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)] protected static extern unsafe
             SdMeshGroup* SDMeshGetGroup(SdMesh* mesh, int groupId);
 
-        [DllImport("SDNative.dll")] protected static extern unsafe
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)] protected static extern unsafe
             SdMesh* SDMeshCreateEmpty([MarshalAs(UnmanagedType.LPWStr)] string meshName);
 
-        [DllImport("SDNative.dll")] protected static extern unsafe
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)] protected static extern unsafe
             bool SDMeshSave(SdMesh* mesh, [MarshalAs(UnmanagedType.LPWStr)] string fileName);
 
-        [DllImport("SDNative.dll")] protected static extern unsafe
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)] protected static extern unsafe
             SdMeshGroup* SDMeshNewGroup(SdMesh* mesh, 
                 [MarshalAs(UnmanagedType.LPWStr)] string groupName,
                 Matrix* transform);
 
         /////////////////////////////////////////////////////////////////////////////
 
-        [DllImport("SDNative.dll")] protected static extern unsafe
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)] protected static extern unsafe
             void SDMeshGroupSetData(SdMeshGroup* group, SdVertexData vertexData);
         
-        [DllImport("SDNative.dll")] protected static extern unsafe
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)] protected static extern unsafe
             SdVertexData SDMeshGroupGetData(SdMeshGroup* group);
 
         /////////////////////////////////////////////////////////////////////////////
 
-        [DllImport("SDNative.dll")] protected static extern unsafe 
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)] protected static extern unsafe 
             SdMaterial* SDMeshCreateMaterial(SdMesh* mesh, 
                 [MarshalAs(UnmanagedType.LPWStr)] string name,
                 [MarshalAs(UnmanagedType.LPWStr)] string diffusePath,
@@ -342,7 +343,7 @@ namespace Ship_Game.Data.Mesh
                 float specular,
                 float alpha);
 
-        [DllImport("SDNative.dll")] protected static extern unsafe
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)] protected static extern unsafe
             void SDMeshGroupSetMaterial(SdMeshGroup* group, SdMaterial* material);
 
         /////////////////////////////////////////////////////////////////////////////
@@ -393,7 +394,7 @@ namespace Ship_Game.Data.Mesh
             public readonly int Id;
         }
 
-        [DllImport("SDNative.dll")] protected static extern unsafe
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)] protected static extern unsafe
             void SDMeshAddBone(SdMesh* mesh,
                 [MarshalAs(UnmanagedType.LPWStr)] string name,
                 int boneIndex,
@@ -401,7 +402,7 @@ namespace Ship_Game.Data.Mesh
                 in Matrix transform
             );
 
-        [DllImport("SDNative.dll")] protected static extern unsafe
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)] protected static extern unsafe
             void SDMeshAddBoneTRS(SdMesh* mesh,
                 [MarshalAs(UnmanagedType.LPWStr)] string name,
                 int boneIndex,
@@ -409,7 +410,7 @@ namespace Ship_Game.Data.Mesh
                 in SdBonePose bindPose
             );
 
-        [DllImport("SDNative.dll")] protected static extern unsafe
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)] protected static extern unsafe
             void SDMeshAddSkinnedBone(SdMesh* mesh,
                 [MarshalAs(UnmanagedType.LPWStr)] string name,
                 int boneIndex,
@@ -418,20 +419,20 @@ namespace Ship_Game.Data.Mesh
                 in Matrix inverseBindPoseTransform
             );
 
-        [DllImport("SDNative.dll")] protected static extern unsafe
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)] protected static extern unsafe
             SdAnimationClip SDMeshCreateAnimationClip(SdMesh* mesh,
                 [MarshalAs(UnmanagedType.LPWStr)] string name,
                 float duration
             );
 
-        [DllImport("SDNative.dll")]
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)]
         protected static extern unsafe
             SdBoneAnimation SDMeshAddBoneAnimation(SdMesh* mesh,
                 SdAnimationClip clip,
                 int skinnedBoneIndex
             );
 
-        [DllImport("SDNative.dll")]
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)]
         protected static extern unsafe
             void SDMeshAddAnimationKeyFrame(SdMesh* mesh,
                 SdAnimationClip clip,
@@ -488,16 +489,16 @@ namespace Ship_Game.Data.Mesh
             public SdBonePoseInfo Pose;
         }
 
-        [DllImport("SDNative.dll")] protected static extern unsafe
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)] protected static extern unsafe
             SdSkinnedBoneInfo SDMeshGetSkinnedBone(SdMesh* mesh, int index);
 
-        [DllImport("SDNative.dll")] protected static extern unsafe
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)] protected static extern unsafe
             SdAnimationClipInfo SDMeshGetAnimationClip(SdMesh* mesh, int clipIndex);
 
-        [DllImport("SDNative.dll")] protected static extern unsafe
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)] protected static extern unsafe
             SdBoneAnimationInfo SDMeshGetBoneAnimation(SdMesh* mesh, int clipIndex, int animIndex);
 
-        [DllImport("SDNative.dll")] protected static extern unsafe
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)] protected static extern unsafe
             SdAnimationKeyFrameInfo SDMeshGetAnimationKeyFrame(SdMesh* mesh, int clipIndex, int animIndex, int frameIndex);
 
         /////////////////////////////////////////////////////////////////////////////

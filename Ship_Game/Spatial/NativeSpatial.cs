@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Runtime.InteropServices;
+using Ship_Game.Platform;
 using System.Threading;
 using Microsoft.Xna.Framework.Graphics;
 using Color = Microsoft.Xna.Framework.Color;
@@ -46,28 +47,28 @@ namespace Ship_Game.Spatial
 
     public sealed unsafe class NativeSpatial : ISpatial, IDisposable
     {
-        const string Lib = "SDNative.dll";
-        const CallingConvention CC = CallingConvention.StdCall;
+        const string Lib = NativeLib.Name;
+        const CallingConvention CC = NativeLib.CallConv;
 
-        [DllImport(Lib)] static extern IntPtr SpatialCreate(SpatialType type, int worldSize, int cellSize, int cellSize2);
-        [DllImport(Lib)] static extern void SpatialDestroy(IntPtr spatial);
+        [DllImport(Lib, CallingConvention = NativeLib.CallConv)] static extern IntPtr SpatialCreate(SpatialType type, int worldSize, int cellSize, int cellSize2);
+        [DllImport(Lib, CallingConvention = NativeLib.CallConv)] static extern void SpatialDestroy(IntPtr spatial);
 
-        [DllImport(Lib)] static extern IntPtr SpatialGetRoot(IntPtr spatial);
-        [DllImport(Lib)] static extern SpatialType SpatialGetType(IntPtr spatial);
-        [DllImport(Lib)] static extern int SpatialWorldSize(IntPtr spatial);
-        [DllImport(Lib)] static extern int SpatialFullSize(IntPtr spatial);
-        [DllImport(Lib)] static extern int SpatialNumActive(IntPtr spatial);
-        [DllImport(Lib)] static extern int SpatialMaxObjects(IntPtr spatial);
+        [DllImport(Lib, CallingConvention = NativeLib.CallConv)] static extern IntPtr SpatialGetRoot(IntPtr spatial);
+        [DllImport(Lib, CallingConvention = NativeLib.CallConv)] static extern SpatialType SpatialGetType(IntPtr spatial);
+        [DllImport(Lib, CallingConvention = NativeLib.CallConv)] static extern int SpatialWorldSize(IntPtr spatial);
+        [DllImport(Lib, CallingConvention = NativeLib.CallConv)] static extern int SpatialFullSize(IntPtr spatial);
+        [DllImport(Lib, CallingConvention = NativeLib.CallConv)] static extern int SpatialNumActive(IntPtr spatial);
+        [DllImport(Lib, CallingConvention = NativeLib.CallConv)] static extern int SpatialMaxObjects(IntPtr spatial);
 
-        [DllImport(Lib)] static extern void SpatialClear(IntPtr spatial);
-        [DllImport(Lib)] static extern IntPtr SpatialRebuild(IntPtr spatial);
+        [DllImport(Lib, CallingConvention = NativeLib.CallConv)] static extern void SpatialClear(IntPtr spatial);
+        [DllImport(Lib, CallingConvention = NativeLib.CallConv)] static extern IntPtr SpatialRebuild(IntPtr spatial);
 
-        [DllImport(Lib)] static extern int SpatialInsert(IntPtr spatial, ref NativeSpatialObject o);
-        [DllImport(Lib)] static extern void SpatialUpdate(IntPtr spatial, int objectId, ref AABoundingBox2Di rect);
-        [DllImport(Lib)] static extern void SpatialRemove(IntPtr spatial, int objectId);
+        [DllImport(Lib, CallingConvention = NativeLib.CallConv)] static extern int SpatialInsert(IntPtr spatial, ref NativeSpatialObject o);
+        [DllImport(Lib, CallingConvention = NativeLib.CallConv)] static extern void SpatialUpdate(IntPtr spatial, int objectId, ref AABoundingBox2Di rect);
+        [DllImport(Lib, CallingConvention = NativeLib.CallConv)] static extern void SpatialRemove(IntPtr spatial, int objectId);
 
-        [DllImport(Lib)] static extern void SpatialCollideAll(IntPtr spatial, IntPtr root, ref CollisionParams param, ref CollisionPairs outResults);
-        [DllImport(Lib)] static extern int SpatialFindNearby(IntPtr spatial, IntPtr root, int* outResults, ref NativeSearchOptions opt);
+        [DllImport(Lib, CallingConvention = NativeLib.CallConv)] static extern void SpatialCollideAll(IntPtr spatial, IntPtr root, ref CollisionParams param, ref CollisionPairs outResults);
+        [DllImport(Lib, CallingConvention = NativeLib.CallConv)] static extern int SpatialFindNearby(IntPtr spatial, IntPtr root, int* outResults, ref NativeSearchOptions opt);
 
         IntPtr Spat; // The spatial structure interface
         IntPtr Root; // Current active Root
@@ -357,7 +358,7 @@ namespace Ship_Game.Spatial
             public byte Collisions;
         }
 
-        [DllImport(Lib)]
+        [DllImport(Lib, CallingConvention = NativeLib.CallConv)]
         static extern void SpatialDebugVisualize(IntPtr spatial, IntPtr root, ref NativeVisOptions opt, ref QtreeVisualizerBridge vis);
         
         static GameScreen Screen;

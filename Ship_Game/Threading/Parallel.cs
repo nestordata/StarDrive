@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Ship_Game.Platform;
 using System.Threading;
 using SDUtils;
 #pragma warning disable CA1060
@@ -444,7 +445,7 @@ namespace Ship_Game
             }
         }
 
-        [DllImport("SDNative.dll")]
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)]
         static extern int GetPhysicalCPUCoreCount();
 
         static int InitThreadPool()

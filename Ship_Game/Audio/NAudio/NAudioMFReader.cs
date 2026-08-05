@@ -1,3 +1,4 @@
+#if STARDIVE_WINDOWSDX
 ﻿using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -372,3 +373,5 @@ public class NAudioMFReader : WaveStream
         WaveFormatChanged?.Invoke(this, EventArgs.Empty);
     }
 }
+
+#endif

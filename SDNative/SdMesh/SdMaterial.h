@@ -2,7 +2,11 @@
 #include <Nano/Mesh.h>
 
 #ifndef DLLAPI
-#  define DLLAPI(returnType) extern "C" __declspec(dllexport) returnType __stdcall
+#  if defined(_MSC_VER)
+#    define DLLAPI(returnType) extern "C" __declspec(dllexport) returnType __stdcall
+#  else
+#    define DLLAPI(returnType) extern "C" __attribute__((visibility("default"))) returnType
+#  endif
 #endif
 
 namespace SdMesh
@@ -61,12 +65,12 @@ namespace SdMesh
      */
     DLLAPI(SDMaterial*) SDMeshCreateMaterial(
             SDMesh* mesh,
-            const wchar_t* name,
-            const wchar_t* diffusePath,
-            const wchar_t* alphaPath,
-            const wchar_t* specularPath,
-            const wchar_t* normalPath,
-            const wchar_t* emissivePath,
+            const sd_wchar* name,
+            const sd_wchar* diffusePath,
+            const sd_wchar* alphaPath,
+            const sd_wchar* specularPath,
+            const sd_wchar* normalPath,
+            const sd_wchar* emissivePath,
             Color3 ambientColor,
             Color3 diffuseColor,
             Color3 specularColor,

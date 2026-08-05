@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using Ship_Game.Platform;
 using System.Text;
 #pragma warning disable CA1060
 
@@ -26,27 +27,27 @@ namespace Ship_Game.Ships
             public int Size;
         }
 
-        [DllImport("SDNative.dll")]
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)]
         static extern ByteBuffer* ByteBufferNew(int defaultCapacity);
-        [DllImport("SDNative.dll")]
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)]
         static extern void ByteBufferDelete(ByteBuffer* b);
-        [DllImport("SDNative.dll")]
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)]
         static extern void ByteBufferCopy(ByteBuffer* b, byte[] dst);
 
-        [DllImport("SDNative.dll")]
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)]
         static extern void ByteBufferWriteI(ByteBuffer* b, int val);
-        [DllImport("SDNative.dll")]
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)]
         static extern void ByteBufferWriteF(ByteBuffer* b, float val, int maxDecimals);
-        [DllImport("SDNative.dll")]
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)]
         static extern void ByteBufferWriteD(ByteBuffer* b, double val, int maxDecimals);
 
-        [DllImport("SDNative.dll")]
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)]
         static extern void ByteBufferWriteC(ByteBuffer* b, char ch);
-        [DllImport("SDNative.dll")]
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)]
         static extern void ByteBufferWriteS(ByteBuffer* b,
             [MarshalAs(UnmanagedType.LPWStr)] string str, int len
         );
-        [DllImport("SDNative.dll")]
+        [DllImport(NativeLib.Name, CallingConvention = NativeLib.CallConv)]
         static extern void ByteBufferWriteKV(ByteBuffer* b,
             [MarshalAs(UnmanagedType.LPWStr)] string key, int keylen,
             [MarshalAs(UnmanagedType.LPWStr)] string val, int vallen

@@ -3,9 +3,22 @@
 using rpp::Vector2;
 using rpp::Vector2d;
 
-#define DLLEXPORT extern "C" __declspec(dllexport)
+#ifndef DLLEXPORT
+#  if defined(_MSC_VER)
+#    define DLLEXPORT extern "C" __declspec(dllexport)
+#  else
+#    define DLLEXPORT extern "C" __attribute__((visibility("default")))
+#  endif
+#endif
+#ifndef SD_CALL
+#  if defined(_MSC_VER)
+#    define SD_CALL __stdcall
+#  else
+#    define SD_CALL
+#  endif
+#endif
 
-DLLEXPORT Vector2 __stdcall RadiansToDirection(float radians)
+DLLEXPORT Vector2 SD_CALL RadiansToDirection(float radians)
 {
     // @note This should invoke x86 FSINCOS instruction
     float s = sin(radians);
@@ -13,7 +26,7 @@ DLLEXPORT Vector2 __stdcall RadiansToDirection(float radians)
     return { s, -c };
 }
 
-DLLEXPORT Vector2d __stdcall RadiansToDirectionD(double radians)
+DLLEXPORT Vector2d SD_CALL RadiansToDirectionD(double radians)
 {
     // @note This should invoke x86 FSINCOS instruction
     double s = sin(radians);
@@ -21,7 +34,7 @@ DLLEXPORT Vector2d __stdcall RadiansToDirectionD(double radians)
     return { s, -c };
 }
 
-DLLEXPORT Vector2 __stdcall RotateAroundPoint(const Vector2& self, const Vector2& center, float radians)
+DLLEXPORT Vector2 SD_CALL RotateAroundPoint(const Vector2& self, const Vector2& center, float radians)
 {
     float s = sin(radians);
     float c = cos(radians);
@@ -31,7 +44,7 @@ DLLEXPORT Vector2 __stdcall RotateAroundPoint(const Vector2& self, const Vector2
              center.y + s*dx + c*dy };
 }
 
-DLLEXPORT Vector2d __stdcall RotateAroundPointD(const Vector2d& self, const Vector2d& center, double radians)
+DLLEXPORT Vector2d SD_CALL RotateAroundPointD(const Vector2d& self, const Vector2d& center, double radians)
 {
     double s = sin(radians);
     double c = cos(radians);
@@ -41,7 +54,7 @@ DLLEXPORT Vector2d __stdcall RotateAroundPointD(const Vector2d& self, const Vect
              center.y + s*dx + c*dy };
 }
 
-DLLEXPORT Vector2 __stdcall RotatePoint(Vector2 self, float radians)
+DLLEXPORT Vector2 SD_CALL RotatePoint(Vector2 self, float radians)
 {
     float s = sin(radians);
     float c = cos(radians);
@@ -49,7 +62,7 @@ DLLEXPORT Vector2 __stdcall RotatePoint(Vector2 self, float radians)
              s*self.x + c*self.y };
 }
 
-DLLEXPORT Vector2 __stdcall OrbitalOffsetRotate(Vector2 offset, float orbitRadius, float radians)
+DLLEXPORT Vector2 SD_CALL OrbitalOffsetRotate(Vector2 offset, float orbitRadius, float radians)
 {
     // get the delta rotation sin/cos
     float s = sin(radians);

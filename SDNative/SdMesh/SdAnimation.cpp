@@ -6,7 +6,7 @@ namespace SdMesh
 {
     ////////////////////////////////////////////////////////////////////////////////////
 
-    DLLAPI(void) SDMeshAddBone(SDMesh* mesh, const wchar_t* name, int boneIndex, int parentBone,
+    DLLAPI(void) SDMeshAddBone(SDMesh* mesh, const sd_wchar* name, int boneIndex, int parentBone,
                                const Matrix4& transform)
     {
         assert(mesh != nullptr && "SDMeshAddBone mesh cannot be null");
@@ -30,7 +30,7 @@ namespace SdMesh
 
     // Phase 3.10.B.8 follow-up: T/R/S-direct model-bone entry point. See header
     // comment above SDMeshAddBoneTRS for the convention-mismatch this fixes.
-    DLLAPI(void) SDMeshAddBoneTRS(SDMesh* mesh, const wchar_t* name, int boneIndex, int parentBone,
+    DLLAPI(void) SDMeshAddBoneTRS(SDMesh* mesh, const sd_wchar* name, int boneIndex, int parentBone,
                                   const Nano::BonePose& bindPose)
     {
         assert(mesh != nullptr && "SDMeshAddBoneTRS mesh cannot be null");
@@ -42,7 +42,7 @@ namespace SdMesh
         });
     }
 
-    DLLAPI(void) SDMeshAddSkinnedBone(SDMesh* mesh, const wchar_t* name, int boneIndex, int parentBone,
+    DLLAPI(void) SDMeshAddSkinnedBone(SDMesh* mesh, const sd_wchar* name, int boneIndex, int parentBone,
                                       const Nano::BonePose& bindPose, const Matrix4& inverseBindPoseTransform)
     {
         assert(mesh != nullptr && "SDMeshAddSkinnedBone mesh cannot be null");
@@ -55,7 +55,7 @@ namespace SdMesh
         mesh->NumSkinnedBones = (int)mesh->TheMesh.SkinnedBones.size();
     }
 
-    DLLAPI(SDAnimationClip) SDMeshCreateAnimationClip(SDMesh* mesh, const wchar_t* name, float duration)
+    DLLAPI(SDAnimationClip) SDMeshCreateAnimationClip(SDMesh* mesh, const sd_wchar* name, float duration)
     {
         assert(mesh != nullptr && "SDMeshCreateAnimationClip mesh cannot be null");
         assert(name != nullptr && "SDMeshCreateAnimationClip name cannot be null");

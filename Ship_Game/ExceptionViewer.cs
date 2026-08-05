@@ -1,4 +1,5 @@
-﻿using Ship_Game.GameScreens;
+﻿#if STARDIVE_WINDOWSDX
+using Ship_Game.GameScreens;
 using System;
 using System.Diagnostics;
 using System.Windows.Forms;
@@ -81,3 +82,4 @@ public partial class ExceptionViewer : Form
         view.ShowDialog();
     }
 }
+#endif

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Windows.Forms;
 using SDGraphics;
 using Ship_Game.ExtensionMethods;
 using Ship_Game.Ships;

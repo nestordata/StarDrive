@@ -12,8 +12,9 @@ Do not attempt to circumvent game DRM. Be reasonably respectful of the dev and t
 
 # System Requirements
 
-* **OS**: Windows 10 version 1803 (April 2018 Update, build 17134) or later — including Windows 11. Older Windows 10 builds are missing per-thread DPI APIs that MonoGame 3.8 requires and the game will fail to start.
-* **Architecture**: 64-bit (x64)
+* **OS**: Windows 10 version 1803+ / Windows 11 (x64) — community default  
+  **Experimental fork builds**: macOS Apple Silicon (DesktopVK / MoltenVK) and Linux x64 — see [docs/cross-platform.md](docs/cross-platform.md)
+* **Architecture**: 64-bit
 * **.NET runtime**: bundled with the installer (.NET 8)
 
 # Downloads

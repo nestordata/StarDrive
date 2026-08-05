@@ -1,0 +1,57 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0/osx-arm64",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {},
+    ".NETCoreApp,Version=v8.0/osx-arm64": {
+      "DesktopVkSpike/1.0.0": {
+        "dependencies": {
+          "MonoGame.Framework.Native": "3.8.5",
+          "MonoGame.Runtime.Mac.Vulkan": "3.8.5"
+        },
+        "runtime": {
+          "DesktopVkSpike.dll": {}
+        }
+      },
+      "MonoGame.Framework.Native/3.8.5": {
+        "runtime": {
+          "lib/netstandard2.1/MonoGame.Framework.dll": {
+            "assemblyVersion": "3.8.5.0",
+            "fileVersion": "3.8.5.0"
+          }
+        }
+      },
+      "MonoGame.Runtime.Mac.Vulkan/3.8.5": {
+        "native": {
+          "runtimes/osx/native/libmgruntime.dylib": {
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "DesktopVkSpike/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "MonoGame.Framework.Native/3.8.5": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-fobFZ8nfhCmt98HD0FNX+nP1IOoJ2N/Zk/JHY6148i4CEpIThv+OJeiR8W+zba+Xz5NkPC2pmWHRum0jN37boQ==",
+      "path": "monogame.framework.native/3.8.5",
+      "hashPath": "monogame.framework.native.3.8.5.nupkg.sha512"
+    },
+    "MonoGame.Runtime.Mac.Vulkan/3.8.5": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-5AEZewEsZMmjbyDnMK313eJfG1RTtcfg+oS1g0Gtthicc8PHLE2yD8kA591eWeNcLdHDJfQV9qHmiAVBwJA4EA==",
+      "path": "monogame.runtime.mac.vulkan/3.8.5",
+      "hashPath": "monogame.runtime.mac.vulkan.3.8.5.nupkg.sha512"
+    }
+  }
+}

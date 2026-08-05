@@ -17,7 +17,20 @@
 #include <memory>
 #include <rpp/debugging.h>
 
-#define DLLEXPORT extern "C" __declspec(dllexport)
+#ifndef DLLEXPORT
+#  if defined(_MSC_VER)
+#    define DLLEXPORT extern "C" __declspec(dllexport)
+#  else
+#    define DLLEXPORT extern "C" __attribute__((visibility("default")))
+#  endif
+#endif
+#ifndef SD_CALL
+#  if defined(_MSC_VER)
+#    define SD_CALL __stdcall
+#  else
+#    define SD_CALL
+#  endif
+#endif
 using byte = unsigned char;
 
 struct Point
@@ -50,13 +63,13 @@ enum DDSFlags
 };
 
 // fast copy of pixels from src to dst, both images must have same W and H
-DLLEXPORT void __stdcall CopyImage(int w, int h, Color* src, Color* dst)
+DLLEXPORT void SD_CALL CopyImage(int w, int h, Color* src, Color* dst)
 {
     memcpy(dst, src, sizeof(Color) * w * h);
 }
 
 // BGRA -> RGBA or RGBA -> BGRA
-DLLEXPORT void __stdcall ConvertBGRAtoRGBA(int w, int h, Color* image)
+DLLEXPORT void SD_CALL ConvertBGRAtoRGBA(int w, int h, Color* image)
 {
     const int count = w * h;
     for (int i = 0; i < count; ++i)
@@ -68,7 +81,7 @@ DLLEXPORT void __stdcall ConvertBGRAtoRGBA(int w, int h, Color* image)
 }
 
 // BGRA -> RGBA or RGBA -> BGRA as a copy to dst
-DLLEXPORT void __stdcall CopyBGRAtoRGBA(int w, int h, Color* src, Color* dst)
+DLLEXPORT void SD_CALL CopyBGRAtoRGBA(int w, int h, Color* src, Color* dst)
 {
     const int count = w * h;
     for (int i = 0; i < count; ++i)
@@ -154,7 +167,7 @@ std::unique_ptr<Color[]> CopyBGRtoBGRA(int w, int h, const RGB* src)
 }
 
 
-using OnImageLoaded = void (__stdcall*)(Color* data, int size, int width, int height);
+using OnImageLoaded = void (SD_CALL*)(Color* data, int size, int width, int height);
 
 enum class ImageLib
 {
@@ -165,7 +178,7 @@ enum class ImageLib
 constexpr ImageLib PngImporter = ImageLib::LibPng;
 constexpr ImageLib PngExporter = ImageLib::StbImage;
 
-DLLEXPORT const char* __stdcall LoadPNGImage(const char* filename, OnImageLoaded onLoaded)
+DLLEXPORT const char* SD_CALL LoadPNGImage(const char* filename, OnImageLoaded onLoaded)
 {
     const char* err = nullptr;
     if constexpr (PngImporter == ImageLib::LodePNG)
@@ -234,7 +247,7 @@ DLLEXPORT const char* __stdcall LoadPNGImage(const char* filename, OnImageLoaded
 /**
  * @return Error string or null if no error happened.
  */
-DLLEXPORT const char* __stdcall SaveImageAsPNG(
+DLLEXPORT const char* SD_CALL SaveImageAsPNG(
     const char* filename, int w, int h, const Color* rgbaImage)
 {
     const char* err = nullptr;
@@ -261,7 +274,7 @@ DLLEXPORT const char* __stdcall SaveImageAsPNG(
 /**
  * @return Error string or null if no error happened
  */
-DLLEXPORT const char* __stdcall SaveImageAsDDS(
+DLLEXPORT const char* SD_CALL SaveImageAsDDS(
     const char* filename, int w, int h, Color* rgbaImage, DDSFlags flags)
 {
     try
@@ -369,7 +382,7 @@ ImageCopy select_region(const Image& d, const Image& s,
 
 
 // Applies 1px padding while copying {src} to {dst:x,y}
-DLLEXPORT void __stdcall CopyPixelsPadded(Image dst, int x, int y, Image src)
+DLLEXPORT void SD_CALL CopyPixelsPadded(Image dst, int x, int y, Image src)
 {
     #define RangeCheck(error_condition) \
     if (error_condition) { \
@@ -406,7 +419,7 @@ DLLEXPORT void __stdcall CopyPixelsPadded(Image dst, int x, int y, Image src)
     if (bottom && right) { select_region(dst, src, D.x, D.y, /*dst*/S.x, S.y).pixel(); }
 }
 
-DLLEXPORT void __stdcall FillPixels(Image dst, int x, int y, Color color, int w, int h)
+DLLEXPORT void SD_CALL FillPixels(Image dst, int x, int y, Color color, int w, int h)
 {
     int endX = x + (w - 1);
     if (endX >= dst.width) endX = dst.width - 1;
@@ -424,7 +437,7 @@ DLLEXPORT void __stdcall FillPixels(Image dst, int x, int y, Color color, int w,
     }
 }
 
-DLLEXPORT int __stdcall HasTransparentPixels(Image img)
+DLLEXPORT int SD_CALL HasTransparentPixels(Image img)
 {
     for (int y = 0; y < img.height; ++y)
     {

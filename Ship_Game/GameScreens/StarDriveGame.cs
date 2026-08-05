@@ -92,6 +92,12 @@ namespace Ship_Game
         // (Play/GetTexture both threw NRE). MonoGame 3.8.1+ fixes both.
         static void ProbeVideoBackend()
         {
+#if STARDIVE_DESKTOPVK
+            // Phase 4: Media Foundation VideoPlayer is Windows-only. Skip videos until Phase 5.
+            GlobalStats.VideoDisabled = true;
+            Log.Warning("DesktopVK: video playback stubbed (Phase 5 will restore cross-platform video).");
+            return;
+#else
             try
             {
                 using var player = new Microsoft.Xna.Framework.Media.VideoPlayer();
@@ -102,6 +108,7 @@ namespace Ship_Game
                 GlobalStats.VideoDisabled = true;
                 Log.Warning($"Media Foundation unavailable; videos disabled: {ex.GetType().Name}: {ex.Message}");
             }
+#endif
         }
 
         protected override void Initialize()

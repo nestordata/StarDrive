@@ -188,3 +188,20 @@ game/SharpDX.XInput.dll
 # See Deploy/prereq/README.md for fetch instructions.
 Deploy/prereq/*.exe
 TestResults/
+
+# Cross-platform local build outputs
+artifacts/
+game-osx/
+SDNative/build-*/
+
+# DesktopVK / self-contained publish leftovers under game/ (apphost + runtime packs)
+game/StarDrive
+game/createdump
+game/lib*.dylib
+game/lib*.so*
+game/System.*.dll
+game/Microsoft.*.dll
+game/mscorlib.dll
+game/netstandard.dll
+game/WindowsBase.dll
+game/System.dll

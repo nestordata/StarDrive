@@ -10,9 +10,9 @@ namespace SdMesh
     using std::string;
     ////////////////////////////////////////////////////////////////////////////////////
 
-    static std::string toString(const wchar_t* wideStr)
+    static std::string toString(const sd_wchar* wideStr)
     {
-        return { wideStr, wideStr + wcslen(wideStr) };
+        return sd_utf16_to_utf8(wideStr);
     }
 
     struct SDMesh
@@ -41,14 +41,14 @@ namespace SdMesh
 
     ////////////////////////////////////////////////////////////////////////////////////
 
-    DLLAPI(SDMesh*) SDMeshOpen(const wchar_t* fileName);
+    DLLAPI(SDMesh*) SDMeshOpen(const sd_wchar* fileName);
     DLLAPI(void)    SDMeshClose(SDMesh* mesh);
     
-    DLLAPI(SDMesh*) SDMeshCreateEmpty(const wchar_t* meshName);
-    DLLAPI(bool)    SDMeshSave(SDMesh* mesh, const wchar_t* fileName);
+    DLLAPI(SDMesh*) SDMeshCreateEmpty(const sd_wchar* meshName);
+    DLLAPI(bool)    SDMeshSave(SDMesh* mesh, const sd_wchar* fileName);
 
     DLLAPI(SDMeshGroup*) SDMeshGetGroup(SDMesh* mesh, int groupId);
-    DLLAPI(SDMeshGroup*) SDMeshNewGroup(SDMesh* mesh, const wchar_t* groupName, Matrix4* transform);
+    DLLAPI(SDMeshGroup*) SDMeshNewGroup(SDMesh* mesh, const sd_wchar* groupName, Matrix4* transform);
 
     ////////////////////////////////////////////////////////////////////////////////////
 }

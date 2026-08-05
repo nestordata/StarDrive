@@ -10,6 +10,7 @@ using System.Globalization;
 using System.IO;
 using System.Xml.Serialization;
 using SDGraphics;
+using SDGraphics.Shaders;
 using SDUtils;
 using Ship_Game.Data;
 using Ship_Game.Data.Yaml;
@@ -810,7 +811,7 @@ namespace Ship_Game
             // before the first LightingEffect ctor fires. Path resolution goes
             // through RawContentLoader to honor the standard mods / vanilla
             // search order.
-            string meshLightingPath = RawContentLoader.GetContentPath("Effects/MeshLighting.mgfxo");
+            string meshLightingPath = Shader.ResolveCompiledPath(RawContentLoader.GetContentPath("Effects/MeshLighting.mgfxo"));
             if (!SynapseGaming.LightingSystem.Effects.Forward.LightingEffect.TryLoadShared(meshLightingPath))
             {
                 Log.Warning($"LightingEffect: MeshLighting.mgfxo not found at '{meshLightingPath}'. Mesh rendering will fail until the .mgfxo ships.");
@@ -820,7 +821,7 @@ namespace Ship_Game
             // never construct SkinnedEffect, so a missing .mgfxo is logged but
             // not fatal. Skinned ships will silently fall back to the static
             // path (no animation) until the file ships.
-            string skinnedPath = RawContentLoader.GetContentPath("Effects/SkinnedEffect.mgfxo");
+            string skinnedPath = Shader.ResolveCompiledPath(RawContentLoader.GetContentPath("Effects/SkinnedEffect.mgfxo"));
             if (!SynapseGaming.LightingSystem.Effects.Forward.SkinnedLightingEffect.TryLoadShared(skinnedPath))
             {
                 Log.Warning($"SkinnedEffect: SkinnedEffect.mgfxo not found at '{skinnedPath}'. Skinned mesh animation will be disabled.");

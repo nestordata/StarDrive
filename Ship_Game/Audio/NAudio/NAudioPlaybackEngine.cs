@@ -1,3 +1,4 @@
+#if STARDIVE_WINDOWSDX
 ﻿using NAudio.CoreAudioApi;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
@@ -112,3 +113,5 @@ internal class NAudioPlaybackEngine : IDisposable
         }
     }
 }
+
+#endif

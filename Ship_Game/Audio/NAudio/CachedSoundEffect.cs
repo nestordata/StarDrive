@@ -1,3 +1,4 @@
+#if STARDIVE_WINDOWSDX
 ﻿using System;
 using NAudio.Wave;
 using SDUtils;
@@ -125,3 +126,5 @@ public class CachedSoundEffect
         }
     }
 }
+
+#endif

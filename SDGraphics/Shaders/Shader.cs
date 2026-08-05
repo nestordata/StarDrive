@@ -61,12 +61,62 @@ public class Shader : IDisposable
         return new(rootDir);
     }
 
+    /// <summary>
+    /// Resolve a precompiled MGFX path for the current host.
+    /// DesktopVK prefers Content/.../Vulkan/&lt;name&gt;.(mgfx|mgfxo) over DirectX siblings.
+    /// </summary>
+    public static string ResolveCompiledPath(string pathToShader)
+    {
+        // Resolve sibling .mgfx for a .fx request; pass-through for an explicit .mgfx/.mgfxo path.
+        string compiledPath;
+        if (pathToShader.EndsWith(".fx", StringComparison.OrdinalIgnoreCase))
+            compiledPath = pathToShader.Substring(0, pathToShader.Length - 3) + ".mgfx";
+        else
+            compiledPath = pathToShader;
+
+#if STARDIVE_DESKTOPVK
+        string vulkanPath = InsertVulkanDirectory(compiledPath);
+        if (File.Exists(vulkanPath))
+            return vulkanPath;
+
+        // Also accept .mgfxo under Vulkan/ when only that spelling was baked.
+        if (vulkanPath.EndsWith(".mgfx", StringComparison.OrdinalIgnoreCase))
+        {
+            string vulkanMgfxo = vulkanPath + "o";
+            if (File.Exists(vulkanMgfxo))
+                return vulkanMgfxo;
+        }
+#endif
+        if (File.Exists(compiledPath))
+            return compiledPath;
+
+        // Shader.FromFile historically looks for .mgfx; content pipeline often ships .mgfxo.
+        if (compiledPath.EndsWith(".mgfx", StringComparison.OrdinalIgnoreCase))
+        {
+            string mgfxo = compiledPath + "o";
+            if (File.Exists(mgfxo))
+                return mgfxo;
+        }
+
+        return compiledPath;
+    }
+
+#if STARDIVE_DESKTOPVK
+    static string InsertVulkanDirectory(string path)
+    {
+        // Content/Effects/Simple.mgfx -> Content/Effects/Vulkan/Simple.mgfx
+        // Effects/Simple.mgfxo -> Effects/Vulkan/Simple.mgfxo
+        string dir = Path.GetDirectoryName(path) ?? "";
+        string file = Path.GetFileName(path);
+        if (string.Equals(Path.GetFileName(dir), "Vulkan", StringComparison.OrdinalIgnoreCase))
+            return path;
+        return Path.Combine(dir, "Vulkan", file);
+    }
+#endif
+
     public static Shader FromFile(GraphicsDevice device, string pathToShader)
     {
-        // Resolve sibling .mgfx for a .fx request; pass-through for an explicit .mgfx path.
-        string mgfxPath = pathToShader.EndsWith(".fx", StringComparison.OrdinalIgnoreCase)
-            ? pathToShader.Substring(0, pathToShader.Length - 3) + ".mgfx"
-            : pathToShader;
+        string mgfxPath = ResolveCompiledPath(pathToShader);
         if (!File.Exists(mgfxPath))
             throw new FileNotFoundException($"Shader.FromFile {pathToShader}: no precompiled MGFX at '{mgfxPath}'");
         byte[] bytes = File.ReadAllBytes(mgfxPath);

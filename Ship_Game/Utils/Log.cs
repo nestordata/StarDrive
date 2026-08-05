@@ -5,7 +5,9 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+#if STARDIVE_WINDOWSDX
 using System.Windows.Forms;
+#endif
 using SDUtils;
 using Sentry;
 using Ship_Game.Universe;
@@ -1010,6 +1012,7 @@ namespace Ship_Game
             }
         }
 
+#if STARDIVE_WINDOWSDX
         [DllImport("kernel32.dll")]
         static extern bool AllocConsole();
         [DllImport("kernel32.dll")]
@@ -1018,6 +1021,7 @@ namespace Ship_Game
         static extern bool ShowWindow(IntPtr hwnd, int nCmdShow);
         [DllImport("user32.dll")]
         static extern IntPtr SetWindowPos(IntPtr hwnd, int hwndAfter, int x, int y, int cx, int cy, int wFlags);
+#endif
 
         [StructLayout(LayoutKind.Sequential)]
         struct RECT
@@ -1030,6 +1034,7 @@ namespace Ship_Game
 
         public static void ShowConsoleWindow(int bufferHeight = 2000)
         {
+#if STARDIVE_WINDOWSDX
             var handle = GetConsoleWindow();
             if (handle == IntPtr.Zero)
             {
@@ -1038,10 +1043,18 @@ namespace Ship_Game
                 Console.SetError(new StreamWriter(Console.OpenStandardError()) { AutoFlush = true });
             }
             else ShowWindow(handle, 5/*SW_SHOW*/);
+#else
+            IntPtr handle = IntPtr.Zero;
+#endif
 
-            if (Console.BufferHeight < bufferHeight)
-                Console.BufferHeight = bufferHeight;
+            try
+            {
+                if (Console.BufferHeight < bufferHeight)
+                    Console.BufferHeight = bufferHeight;
+            }
+            catch { /* redirected console may not support BufferHeight */ }
 
+#if STARDIVE_WINDOWSDX
             // Move the console window to a secondary screen if we have multiple monitors
             if (Screen.AllScreens.Length > 1 && (handle = GetConsoleWindow()) != IntPtr.Zero)
             {
@@ -1053,14 +1066,16 @@ namespace Ship_Game
                 const int noResize = 0x0001;
                 SetWindowPos(handle, 0, bounds.Left + 40, bounds.Top + 40, 0, 0, noResize);
             }
-
+#endif
             HasActiveConsole = handle != IntPtr.Zero;
         }
 
         public static void HideConsoleWindow()
         {
             HasActiveConsole = false;
+#if STARDIVE_WINDOWSDX
             ShowWindow(GetConsoleWindow(), 0/*SW_HIDE*/);
+#endif
         }
     }
 }

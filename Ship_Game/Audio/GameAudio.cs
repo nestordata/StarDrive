@@ -4,8 +4,12 @@ using SDGraphics;
 using SDUtils;
 using System.IO;
 using Ship_Game.Utils;
+#if STARDIVE_WINDOWSDX
 using NAudio.CoreAudioApi;
 using Ship_Game.Audio.NAudio;
+#else
+using Ship_Game.Audio.DesktopVk;
+#endif
 
 namespace Ship_Game.Audio;
 
@@ -22,8 +26,12 @@ public static class GameAudio
     // Music access on it. Without volatile the JIT/CPU could reorder so a reader sees the flag
     // true while still seeing stale nulls in the dependent fields.
     static volatile bool AudioEngineGood;
-    
+
+#if STARDIVE_WINDOWSDX
     static NAudioPlaybackEngine AudioEngine;
+#else
+    static MonoGamePlaybackEngine AudioEngine;
+#endif
     static string ConfigFile;
     static AudioConfig Config;
     static AudioCategory Music;
@@ -56,6 +64,7 @@ public static class GameAudio
             ReloadAfterDeviceChange(null);
     }
 
+#if STARDIVE_WINDOWSDX
     public static void ReloadAfterDeviceChange(MMDevice newDevice)
     {
         Initialize(newDevice, ConfigFile);
@@ -108,6 +117,47 @@ public static class GameAudio
             AudioEngineGood = false;
         }
     }
+#else
+    public static void ReloadAfterDeviceChange(object newDevice)
+    {
+        Initialize(configFile: ConfigFile);
+    }
+
+    public static void Initialize(object device, string configFile) => Initialize(configFile);
+
+    public static void Initialize(string configFile)
+    {
+        try
+        {
+            Destroy();
+            AudioEngineGood = false;
+            Devices = new();
+            if (!Devices.PickAudioDevice(out _))
+            {
+                Log.Warning("GameAudio is disabled since audio device selection failed.");
+                AudioDisabled = true;
+                return;
+            }
+
+            Log.Info("GameAudio Initialize Device: Default (DesktopVK/FAudio)");
+            ConfigFile = configFile;
+            Config = new(configFile);
+            Music = Config.GetCategory("Music");
+            RacialMusic = Config.GetCategory("RacialMusic");
+            AudioEngine = new();
+            AsyncSfxQueue = new(16);
+            SfxThread = new(SfxEnqueueThread) { Name = "GameAudioSfx" };
+            SfxThread.Start();
+            AudioEngineGood = true;
+        }
+        catch (Exception ex)
+        {
+            Log.Warning($"AudioEngine init failed (game will run without sound): {ex.Message}");
+            Destroy();
+            AudioEngineGood = false;
+        }
+    }
+#endif
 
     // called from GameBase.Dispose()
     public static void Destroy()
@@ -336,7 +386,7 @@ public static class GameAudio
             Log.Warning($"Could not find SFX file: {sfxFile} for SoundEffect: {effect.Id}");
             return null;
         }
-        NAudioPlaybackEngine engine = AudioEngine;
+        var engine = AudioEngine;
         if (engine == null)
             return null; // engine torn down concurrently (re-init)
         return engine.Play(effect.Category, emitter, file.FullName, volume);

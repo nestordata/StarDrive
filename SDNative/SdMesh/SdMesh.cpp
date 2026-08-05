@@ -48,14 +48,22 @@ namespace SdMesh
 
     ////////////////////////////////////////////////////////////////////////////////////
 
-    DLLAPI(SDMesh*) SDMeshOpen(const wchar_t* fileName)
+    DLLAPI(SDMesh*) SDMeshOpen(const sd_wchar* fileName)
     {
-        auto sdm = new SDMesh{ toString(fileName) };
-        if (!sdm->TheMesh) {
-            SDMeshClose(sdm);
+        try
+        {
+            auto sdm = new SDMesh{ toString(fileName) };
+            if (!sdm->TheMesh) {
+                SDMeshClose(sdm);
+                return nullptr;
+            }
+            return sdm;
+        }
+        catch (...)
+        {
+            // Nano::MeshIOError (and friends) must not abort the CLR process.
             return nullptr;
         }
-        return sdm;
     }
 
     DLLAPI(void) SDMeshClose(SDMesh* mesh)
@@ -63,7 +71,7 @@ namespace SdMesh
         delete mesh;
     }
     
-    DLLAPI(SDMesh*) SDMeshCreateEmpty(const wchar_t* meshName)
+    DLLAPI(SDMesh*) SDMeshCreateEmpty(const sd_wchar* meshName)
     {
         auto* mesh = new SDMesh{};
         mesh->TheMesh.Name = toString(meshName);
@@ -71,7 +79,7 @@ namespace SdMesh
         return mesh;
     }
 
-    DLLAPI(bool) SDMeshSave(SDMesh* mesh, const wchar_t* fileName)
+    DLLAPI(bool) SDMeshSave(SDMesh* mesh, const sd_wchar* fileName)
     {
         return mesh->TheMesh.SaveAs(toString(fileName));
     }
@@ -85,7 +93,7 @@ namespace SdMesh
         return nullptr;
     }
 
-    DLLAPI(SDMeshGroup*) SDMeshNewGroup(SDMesh* mesh, const wchar_t* groupName, Matrix4* transform)
+    DLLAPI(SDMeshGroup*) SDMeshNewGroup(SDMesh* mesh, const sd_wchar* groupName, Matrix4* transform)
     {
         Nano::MeshGroup& group = mesh->TheMesh.CreateGroup(toString(groupName));
         auto* g = mesh->Groups.emplace_back(std::make_unique<SDMeshGroup>(*mesh, group.GroupId)).get();

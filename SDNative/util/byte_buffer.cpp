@@ -2,8 +2,20 @@
 #include <cstring>
 #include <rpp/strview.h>
 
-#define DLLEXPORT extern "C" __declspec(dllexport)
-#define STDCALL(ret) DLLEXPORT ret __stdcall
+#ifndef DLLEXPORT
+#  if defined(_MSC_VER)
+#    define DLLEXPORT extern "C" __declspec(dllexport)
+#  else
+#    define DLLEXPORT extern "C" __attribute__((visibility("default")))
+#  endif
+#endif
+#ifndef STDCALL
+#  if defined(_MSC_VER)
+#    define STDCALL(ret) DLLEXPORT ret __stdcall
+#  else
+#    define STDCALL(ret) DLLEXPORT ret
+#  endif
+#endif
 using byte = unsigned char;
 
 /**
@@ -84,20 +96,20 @@ STDCALL(void) ByteBufferWriteD(ByteBuffer* b, double val, int maxDecimals) noexc
     memcpy(b->Grow(len), buf, len);
 }
 
-STDCALL(void) ByteBufferWriteC(ByteBuffer* b, wchar_t ch) noexcept
+STDCALL(void) ByteBufferWriteC(ByteBuffer* b, sd_wchar ch) noexcept
 {
     byte* dst = b->Grow(1);
     *dst = (byte)ch;
 }
 
-__forceinline void Copy(byte* dst, const wchar_t* str, int len) noexcept
+__forceinline void Copy(byte* dst, const sd_wchar* str, int len) noexcept
 {
     for (int i = 0; i < len; ++i)
         dst[i] = (byte)str[i];
 }
 
 STDCALL(void) ByteBufferWriteS(ByteBuffer* b,
-    const wchar_t* str, int len) noexcept
+    const sd_wchar* str, int len) noexcept
 {
     byte* dst = b->Grow(len);
     Copy(dst, str, len);
@@ -106,8 +118,8 @@ STDCALL(void) ByteBufferWriteS(ByteBuffer* b,
 
 // key=value\n
 STDCALL(void) ByteBufferWriteKV(ByteBuffer* b,
-    const wchar_t* key, int keylen,
-    const wchar_t* val, int vallen) noexcept
+    const sd_wchar* key, int keylen,
+    const sd_wchar* val, int vallen) noexcept
 {
     int len = keylen + vallen + 2;
     byte* dst = b->Grow(len);

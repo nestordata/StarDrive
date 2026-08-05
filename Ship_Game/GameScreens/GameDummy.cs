@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Windows.Forms;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Ship_Game.Audio;
@@ -20,7 +19,11 @@ namespace Ship_Game
             settings.Height = height;
             settings.Mode = WindowMode.Borderless;
             ApplyGraphics(settings);
+#if STARDIVE_WINDOWSDX
             if (show) Form.Visible = true;
+#else
+            _ = show;
+#endif
             IsMouseVisible = true;
         }
 

@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Runtime.CompilerServices;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using SDGraphics;
 #pragma warning disable CA1060
@@ -12,13 +12,28 @@ namespace Ship_Game
     /// </summary>
     public class PerfTimer
     {
+#if STARDIVE_WINDOWSDX
         [DllImport("Kernel32.dll", EntryPoint = "QueryPerformanceCounter")]
         static extern bool GetCurrentTicks(out long count);
 
-        public static bool GetTicks(out long count) => GetCurrentTicks(out count);
-
         [DllImport("Kernel32.dll")]
         static extern bool QueryPerformanceFrequency(out long freq);
+#else
+        // DesktopVK / Unix: Stopwatch is QPC-backed on Windows and mach_absolute_time on macOS.
+        static bool GetCurrentTicks(out long count)
+        {
+            count = Stopwatch.GetTimestamp();
+            return true;
+        }
+
+        static bool QueryPerformanceFrequency(out long freq)
+        {
+            freq = Stopwatch.Frequency;
+            return true;
+        }
+#endif
+
+        public static bool GetTicks(out long count) => GetCurrentTicks(out count);
 
         public static long Frequency;
         public static double InvFrequency;

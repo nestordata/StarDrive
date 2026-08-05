@@ -1,0 +1,4 @@
+<Project>
+  <Import Project="$(MSBuildThisFileDirectory)build/StarDrive.Platform.targets"
+          Condition="Exists('$(MSBuildThisFileDirectory)build/StarDrive.Platform.targets')" />
+</Project>

@@ -202,12 +202,12 @@ namespace Ship_Game
 
         void EnsureFogMapRenderTargets(GraphicsDevice device)
         {
-            if (FogMapTargetA == null || FogMapTargetA.IsDisposed || FogMapTargetA.IsContentLost)
+            if (FogMapTargetA == null || FogMapTargetA.IsDisposed)
             {
                 FogMapTargetA?.Dispose();
                 FogMapTargetA = RenderTargets.Create(device, 512, 512);
             }
-            if (FogMapTargetB == null || FogMapTargetB.IsDisposed || FogMapTargetB.IsContentLost)
+            if (FogMapTargetB == null || FogMapTargetB.IsDisposed)
             {
                 FogMapTargetB?.Dispose();
                 FogMapTargetB = RenderTargets.Create(device, 512, 512);
@@ -254,8 +254,7 @@ namespace Ship_Game
 
         static bool RtNeedsRebuild(RenderTarget2D rt, int w, int h)
         {
-            return rt == null || rt.IsDisposed || rt.IsContentLost
-                || rt.Width != w || rt.Height != h;
+            return rt == null || rt.IsDisposed || rt.Width != w || rt.Height != h;
         }
 
         void UpdateFogMap(SpriteBatch batch, GraphicsDevice device)

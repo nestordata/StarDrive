@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <StarDriveIsGameProject>true</StarDriveIsGameProject>
+    <StarDriveIsGameOrGfxProject>true</StarDriveIsGameOrGfxProject>
     <Platforms>x64</Platforms>
     <OutputType>Library</OutputType>
-    <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>UnitTests</RootNamespace>
     <AssemblyName>UnitTests</AssemblyName>
     <LangVersion>latest</LangVersion>
@@ -23,13 +23,13 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>$(DefineConstants);DEBUG;TRACE</DefineConstants>
     <DebugType>portable</DebugType>
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
     <Optimize>true</Optimize>
     <DebugType>portable</DebugType>
     <DebugSymbols>true</DebugSymbols>
@@ -211,8 +211,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MonoGame.Framework.WindowsDX" Version="3.8.1.303" />
-    <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.1.303" />
     <PackageReference Include="LargeAddressAware" Version="1.0.6" />
     <PackageReference Include="MSTest.TestAdapter" Version="3.11.1" />
     <PackageReference Include="MSTest.TestFramework" Version="3.11.1" />

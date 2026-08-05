@@ -1,7 +1,6 @@
 using System;
 using System.Diagnostics;
 using Microsoft.Xna.Framework.Graphics;
-using NAudio.CoreAudioApi;
 using SDGraphics;
 using SDUtils;
 using Ship_Game.Audio;
@@ -101,7 +100,7 @@ namespace Ship_Game
     {
         readonly bool Fade = true;
         DropOptions<DisplayMode> ResolutionDropDown;
-        DropOptions<MMDevice> SoundDevices;
+        DropOptions<string> SoundDevices;
         DropOptions<Language> CurrentLanguage;
         Rectangle LeftArea;
         Rectangle RightArea;
@@ -247,7 +246,7 @@ namespace Ship_Game
             UIList botLeft = AddList(new Vector2(LeftArea.X, LeftArea.Y + 180), LeftArea.Size());
             botLeft.Padding = new Vector2(2f, 8f);
             botLeft.LayoutStyle = ListLayoutStyle.Clip;
-            SoundDevices = new DropOptions<MMDevice>(216, 18);
+            SoundDevices = new DropOptions<string>(216, 18);
             botLeft.AddSplit(new UILabel(GameText.SoundDevice), SoundDevices);
             MusicVolumeSlider   = botLeft.Add(new FloatSlider(SliderStyle.Percent, 288f, 50f, GameText.MusicVolume, 0f, 1f, GlobalStats.MusicVolume));
             EffectsVolumeSlider = botLeft.Add(new FloatSlider(SliderStyle.Percent, 288f, 50f, GameText.EffectsVolume, 0f, 1f, GlobalStats.EffectsVolume));
@@ -321,18 +320,18 @@ namespace Ship_Game
 
         void CreateSoundDevicesDropOptions()
         {
-            MMDevice defaultDevice = GameAudio.Devices?.DefaultDevice;
-            Array<MMDevice> devices = GameAudio.Devices?.Devices;
-
             SoundDevices.Clear();
+#if STARDIVE_WINDOWSDX
+            var defaultDevice = GameAudio.Devices?.DefaultDevice;
+            var devices = GameAudio.Devices?.Devices;
 
             if (devices is {Count: > 0})
             {
-                SoundDevices.AddOption("Default", null/*because it might change*/);
-                foreach (MMDevice device in devices)
+                SoundDevices.AddOption("Default", "Default");
+                foreach (var device in devices)
                 {
                     string isDefault = (device.ID == defaultDevice?.ID) ? "* " : "";
-                    SoundDevices.AddOption($"{isDefault}{device.FriendlyName}", device);
+                    SoundDevices.AddOption($"{isDefault}{device.FriendlyName}", device.ID);
                     if (!GameAudio.Devices.UserPrefersDefaultDevice && device.ID == GameAudio.Devices.CurrentDevice.ID)
                         SoundDevices.ActiveIndex = devices.IndexOf(device) + 1;
                 }
@@ -343,6 +342,10 @@ namespace Ship_Game
                 SoundDevices.AddOption("Not Available", null);
                 SoundDevices.OnValueChange = null;
             }
+#else
+            SoundDevices.AddOption("Default (system)", "Default");
+            SoundDevices.OnValueChange = null;
+#endif
         }
 
         void CreateLanguageDropOptions()
@@ -355,8 +358,12 @@ namespace Ship_Game
             CurrentLanguage.OnValueChange = OnLanguageDropDownChange;
         }
 
-        void OnAudioDeviceDropDownChange(MMDevice newDevice)
+        void OnAudioDeviceDropDownChange(string deviceId)
         {
+#if STARDIVE_WINDOWSDX
+            var newDevice = deviceId is null or "Default"
+                ? GameAudio.Devices.DefaultDevice
+                : GameAudio.Devices.FindDevice(deviceId);
             newDevice ??= GameAudio.Devices.DefaultDevice;
 
             GameAudio.Devices.SetUserPreference(newDevice);
@@ -364,6 +371,9 @@ namespace Ship_Game
 
             GameAudio.SmallServo();
             GameAudio.TacticalPause();
+#else
+            _ = deviceId;
+#endif
         }
 
         void OnLanguageDropDownChange(Language newLanguage)

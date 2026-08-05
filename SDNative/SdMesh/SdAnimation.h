@@ -66,7 +66,7 @@ namespace SdMesh
 
     ////////////////////////////////////////////////////////////////////////////////////
 
-    DLLAPI(void) SDMeshAddBone(SDMesh* mesh, const wchar_t* name, int boneIndex, int parentBone,
+    DLLAPI(void) SDMeshAddBone(SDMesh* mesh, const sd_wchar* name, int boneIndex, int parentBone,
                                const Matrix4& transform);
 
     /**
@@ -86,20 +86,20 @@ namespace SdMesh
      * heuristic). This entry point lets the caller compute T/R/S in the same
      * convention the keyframe path uses, eliminating the drift at the source.
      */
-    DLLAPI(void) SDMeshAddBoneTRS(SDMesh* mesh, const wchar_t* name, int boneIndex, int parentBone,
+    DLLAPI(void) SDMeshAddBoneTRS(SDMesh* mesh, const sd_wchar* name, int boneIndex, int parentBone,
                                   const Nano::BonePose& bindPose);
 
     /**
      * Adds a new skinned bone to the mesh' list of bones
      */
-    DLLAPI(void) SDMeshAddSkinnedBone(SDMesh* mesh, const wchar_t* name, int boneIndex, int parentBone,
+    DLLAPI(void) SDMeshAddSkinnedBone(SDMesh* mesh, const sd_wchar* name, int boneIndex, int parentBone,
                                       const Nano::BonePose& bindPose, const Matrix4& inverseBindPoseTransform);
 
     /**
      * Creates a new animation clip inside SDMesh
      * This clip is automatically freed once SDMesh is closed
      */
-    DLLAPI(SDAnimationClip) SDMeshCreateAnimationClip(SDMesh* mesh, const wchar_t* name, float duration);
+    DLLAPI(SDAnimationClip) SDMeshCreateAnimationClip(SDMesh* mesh, const sd_wchar* name, float duration);
 
     /**
      * Creates a new animation channel inside the animation clip for a specific bone

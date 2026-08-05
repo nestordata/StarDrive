@@ -1,0 +1,75 @@
+name: Cross-Platform Builds
+
+on:
+  push:
+    branches: [cross-platform, main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  windows-dx:
+    name: Windows DX (community path)
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+      - name: Restore + Build Release|x64
+        run: |
+          msbuild StarDrive.sln /restore /p:Configuration=Release /p:Platform=x64 /p:StarDrivePlatform=WindowsDX /m
+
+  mac-desktopvk:
+    name: macOS arm64 DesktopVK
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Install CMake
+        run: brew install cmake || true
+      - name: Build SDNative
+        run: bash scripts/build-sdnative.sh game
+      - name: Publish osx-arm64
+        run: |
+          chmod +x scripts/publish-mac.sh scripts/build-sdnative.sh
+          bash scripts/publish-mac.sh
+      - name: Upload DMG / app
+        uses: actions/upload-artifact@v4
+        with:
+          name: stardrive-mac-arm64
+          path: |
+            artifacts/*.dmg
+            artifacts/StarDrive.app
+            artifacts/osx-arm64
+
+  linux-desktopvk:
+    name: Linux x64 DesktopVK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++ libpng-dev zlib1g-dev
+      - name: Publish linux-x64
+        run: |
+          chmod +x scripts/publish-linux.sh scripts/build-sdnative.sh
+          bash scripts/publish-linux.sh
+      - name: Upload tarball
+        uses: actions/upload-artifact@v4
+        with:
+          name: stardrive-linux-x64
+          path: artifacts/*.tar.gz

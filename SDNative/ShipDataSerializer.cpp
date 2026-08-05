@@ -63,9 +63,10 @@ namespace SDNative
             });
     }
 
-    bool ShipData::LoadFromFile(const wchar_t* filename)
+    bool ShipData::LoadFromFile(const sd_wchar* filename)
     {
-        Data = rpp::file::read_all(filename);
+        std::string path = sd_utf16_to_utf8(filename);
+        Data = rpp::file::read_all(path.c_str());
         if (!Data) return Error("Failed to open ShipData xml");
         try
         {
@@ -173,14 +174,14 @@ namespace SDNative
 
     ////////////////////////////////////////////////////////////////////////////////////
     
-    extern "C" ShipData* __stdcall CreateShipDataParser(const wchar_t * filename)
+    ShipData* SPATIAL_CC CreateShipDataParser(const sd_wchar* filename)
     {
         ShipData* data = new ShipData();
         data->LoadFromFile(filename);
         return data;
     }
 
-    extern "C" void __stdcall DisposeShipDataParser(ShipData* data)
+    void SPATIAL_CC DisposeShipDataParser(ShipData* data)
     {
         delete data;
     }

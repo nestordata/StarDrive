@@ -1,0 +1,33 @@
+<Project>
+  <!-- MonoGame + platform package refs selected by StarDrivePlatform -->
+
+  <!-- Game host output type (after csproj may have set WinExe). -->
+  <PropertyGroup Condition="'$(StarDriveIsGameProject)' == 'true' AND '$(StarDrivePlatform)' == 'DesktopVK'">
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(StarDrivePlatform)' == 'WindowsDX' AND '$(StarDriveIsGameOrGfxProject)' == 'true'">
+    <PackageReference Include="MonoGame.Framework.WindowsDX" Version="$(MonoGameVersionWindowsDX)" />
+    <PackageReference Include="MonoGame.Content.Builder.Task" Version="$(MonoGameVersionWindowsDX)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(StarDrivePlatform)' == 'DesktopVK' AND '$(StarDriveIsGameOrGfxProject)' == 'true'">
+    <PackageReference Include="MonoGame.Framework.Native" Version="$(MonoGameVersionDesktopVK)" />
+    <PackageReference Include="MonoGame.Content.Builder.Task" Version="$(MonoGameVersionDesktopVK)" />
+    <PackageReference Include="MonoGame.Runtime.Mac.Vulkan" Version="$(MonoGameVersionDesktopVK)" Condition="$([MSBuild]::IsOSPlatform('OSX'))" />
+    <PackageReference Include="MonoGame.Runtime.Linux.Vulkan" Version="$(MonoGameVersionDesktopVK)" Condition="$([MSBuild]::IsOSPlatform('Linux'))" />
+    <PackageReference Include="MonoGame.Runtime.Windows.Vulkan" Version="$(MonoGameVersionDesktopVK)" Condition="$([MSBuild]::IsOSPlatform('Windows'))" />
+    <!-- When publishing for a RID that may differ from the build host, include all DesktopVK runtimes. -->
+    <PackageReference Include="MonoGame.Runtime.Mac.Vulkan" Version="$(MonoGameVersionDesktopVK)" Condition="'$(StarDriveBundleAllVulkanRuntimes)' == 'true'" />
+    <PackageReference Include="MonoGame.Runtime.Linux.Vulkan" Version="$(MonoGameVersionDesktopVK)" Condition="'$(StarDriveBundleAllVulkanRuntimes)' == 'true'" />
+    <PackageReference Include="MonoGame.Runtime.Windows.Vulkan" Version="$(MonoGameVersionDesktopVK)" Condition="'$(StarDriveBundleAllVulkanRuntimes)' == 'true'" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(StarDrivePlatform)' == 'WindowsDX' AND '$(StarDriveIsGameProject)' == 'true'">
+    <PackageReference Include="SharpDX" Version="4.0.1" />
+    <PackageReference Include="SharpDX.DXGI" Version="4.0.1" />
+    <PackageReference Include="SharpDX.Direct3D11" Version="4.0.1" />
+    <PackageReference Include="LargeAddressAware" Version="1.0.6" />
+    <PackageReference Include="NAudio" Version="2.2.1" />
+  </ItemGroup>
+</Project>

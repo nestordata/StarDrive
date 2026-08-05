@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <StarDriveIsGameProject>true</StarDriveIsGameProject>
+    <StarDriveIsGameOrGfxProject>true</StarDriveIsGameOrGfxProject>
     <Platforms>x64</Platforms>
     <!-- Declare every Configuration the .sln references. SDK-style projects
          default to "Debug;Release"; without listing the others here, VS warns
@@ -11,7 +12,6 @@
          further down). -->
     <Configurations>Debug;Release;Debug - Auto Fast;Release - Auto Fast;Debug - Auto;Release - Auto;Deploy</Configurations>
     <OutputType>WinExe</OutputType>
-    <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>Ship_Game</RootNamespace>
     <AssemblyName>StarDrive</AssemblyName>
     <StartupObject>Ship_Game.Program</StartupObject>
@@ -37,7 +37,8 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <!-- Preserve STARDIVE_* from StarDrive.Platform.props -->
+    <DefineConstants>$(DefineConstants);DEBUG;TRACE</DefineConstants>
     <DebugType>portable</DebugType>
     <DebugSymbols>true</DebugSymbols>
     <!-- Phase 2.6.A switched the default OutputType to WinExe (Windows subsystem),
@@ -64,13 +65,13 @@
        simulation FPS when the flag is on. Otherwise these mirror Debug/Release
        settings; warning gate stays off here per §4.3 (Release|x64 only). -->
   <PropertyGroup Condition="'$(Configuration)' == 'Debug - Auto Fast'">
-    <DefineConstants>DEBUG;TRACE;AUTOFAST</DefineConstants>
+    <DefineConstants>$(DefineConstants);DEBUG;TRACE;AUTOFAST</DefineConstants>
     <DebugType>portable</DebugType>
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release - Auto Fast'">
-    <DefineConstants>AUTOFAST</DefineConstants>
+    <DefineConstants>$(DefineConstants);AUTOFAST</DefineConstants>
     <Optimize>true</Optimize>
     <DebugType>portable</DebugType>
     <DebugSymbols>true</DebugSymbols>
@@ -81,7 +82,7 @@
        runs at the normal speed the player picks instead of being shoved to max.
        Useful for observing AI behavior at human-readable pace. -->
   <PropertyGroup Condition="'$(Configuration)' == 'Debug - Auto'">
-    <DefineConstants>DEBUG;TRACE;AUTO</DefineConstants>
+    <DefineConstants>$(DefineConstants);DEBUG;TRACE;AUTO</DefineConstants>
     <DebugType>portable</DebugType>
     <DebugSymbols>true</DebugSymbols>
     <!-- Match Debug: restore the console subsystem so dev logs are visible during
@@ -90,7 +91,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release - Auto'">
-    <DefineConstants>AUTO</DefineConstants>
+    <DefineConstants>$(DefineConstants);AUTO</DefineConstants>
     <Optimize>true</Optimize>
     <DebugType>portable</DebugType>
     <DebugSymbols>true</DebugSymbols>
@@ -619,10 +620,19 @@
     <Compile Include="Ship_Game\GameScreens\LoadSaveItems\LoadNewGameSetupScreen.cs" />
     <Compile Include="Ship_Game\RaceSave.cs" />
     <Compile Include="Ship_Game\GameScreens\LoadSaveItems\SaveRaceScreen.cs" />
+    <Compile Include="Ship_Game\Platform\NativeLib.cs" />
+    <Compile Include="Ship_Game\Platform\IPlatformServices.cs" />
+    <Compile Include="Ship_Game\Platform\Windows\WindowsPlatform.cs" />
+    <Compile Include="Ship_Game\Platform\DesktopVk\DesktopVkPlatform.cs" />
+    <Compile Include="Ship_Game\Platform\DesktopVk\SimpleConfiguration.cs" />
+    <Compile Include="Ship_Game\ExceptionViewer.DesktopVK.cs" />
+    <Compile Include="Ship_Game\Audio\AudioDevices.DesktopVK.cs" />
+    <Compile Include="Ship_Game\Audio\DesktopVk\MonoGamePlaybackEngine.cs" />
+    <Compile Include="Ship_Game\Graphics\MemoryPressure.DesktopVK.cs" />
     <Compile Include="Ship_Game\ExceptionViewer.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Ship_Game\ExceptionViewer.Designer.cs">
+    <Compile Include="Ship_Game\ExceptionViewer.Designer.cs" Condition="'$(StarDrivePlatform)' == 'WindowsDX'">
       <DependentUpon>ExceptionViewer.cs</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -988,7 +998,7 @@
     <Compile Include="Ship_Game\DropDownMenu.cs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Ship_Game\ExceptionViewer.resx">
+    <EmbeddedResource Include="Ship_Game\ExceptionViewer.resx" Condition="'$(StarDrivePlatform)' == 'WindowsDX'">
       <DependentUpon>ExceptionViewer.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
@@ -1032,17 +1042,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MonoGame.Framework.WindowsDX" Version="3.8.1.303" />
-    <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.1.303" />
-    <!-- Already in MonoGame.Framework.WindowsDX's closure; referenced directly so we can
-         query live VRAM pressure (IDXGIAdapter3::QueryVideoMemoryInfo) - see MemoryPressure.cs -->
-    <PackageReference Include="SharpDX" Version="4.0.1" />
-    <PackageReference Include="SharpDX.DXGI" Version="4.0.1" />
-    <PackageReference Include="SharpDX.Direct3D11" Version="4.0.1" />
-    <PackageReference Include="LargeAddressAware" Version="1.0.6" />
-    <PackageReference Include="NAudio" Version="2.2.1" />
     <PackageReference Include="Sentry" Version="3.41.4" />
-  </ItemGroup>
+</ItemGroup>
 
   <!-- Phase 2.6.A: dropped polyfill / now-built-in packages —
        IsExternalInit, Microsoft.Win32.Registry, System.Reflection.Metadata,
