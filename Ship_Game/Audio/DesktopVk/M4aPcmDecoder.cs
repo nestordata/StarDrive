@@ -93,19 +93,35 @@ static class M4aPcmDecoder
         using var pcm = new MemoryStream(capacity: 64 * 1024);
         int sampleRate = 0;
         int channels = 0;
-        byte[]? frame;
-        while ((frame = demux.ReadNextFrame()) != null && frame.Length > 0)
+        try
         {
-            decoder.DecodeFrame(frame, buffer);
-            if (buffer.Data is { Length: > 0 })
+            // SharpJaad ADTSDemultiplexer.ReadNextFrame never returns null on EOF —
+            // FindNextFrame failure still ReadFully's the previous frame length and
+            // throws EndOfStreamException / IOException. Treat that as normal EOF.
+            while (true)
             {
-                sampleRate = buffer.SampleRate;
-                channels = buffer.Channels;
-                if (buffer.BitsPerSample != 16)
-                    throw new InvalidOperationException(
-                        $"Unexpected AAC bit depth {buffer.BitsPerSample} in '{path}' (want 16)");
-                pcm.Write(buffer.Data, 0, buffer.Data.Length);
+                byte[] frame = demux.ReadNextFrame();
+                if (frame.Length == 0)
+                    break;
+                decoder.DecodeFrame(frame, buffer);
+                if (buffer.Data is { Length: > 0 })
+                {
+                    sampleRate = buffer.SampleRate;
+                    channels = buffer.Channels;
+                    if (buffer.BitsPerSample != 16)
+                        throw new InvalidOperationException(
+                            $"Unexpected AAC bit depth {buffer.BitsPerSample} in '{path}' (want 16)");
+                    pcm.Write(buffer.Data, 0, buffer.Data.Length);
+                }
             }
+        }
+        catch (EndOfStreamException)
+        {
+            // normal ADTS EOF
+        }
+        catch (IOException) when (pcm.Length > 0)
+        {
+            // ReadFully past EOF after last good frame
         }
 
         if (pcm.Length == 0 || sampleRate <= 0 || channels <= 0)

@@ -38,39 +38,66 @@ internal sealed class MonoGamePlaybackEngine : IDisposable
 
     public IAudioInstance? Play(AudioCategory category, AudioEmitter? emitter, string audioFile, float volume)
     {
+        MgSoundEffect? effect = null;
+        MgSoundEffectInstance? inst = null;
+        bool ownsEffect = false;
         try
         {
             float? effective = emitter?.GetEffectiveVolume(category, volume);
             if (effective < 0.0001f)
                 return null;
 
-            MgSoundEffect? effect = GetOrLoad(audioFile);
+            // Match Windows NAudio: only MemoryCache categories keep decoded PCM forever.
+            // Music/RacialMusic/PlanetAmbient would otherwise pin hundreds of MB–GB.
+            effect = GetOrLoad(audioFile, category.MemoryCache, out ownsEffect);
             if (effect == null)
                 return null;
 
             float gain = (effective ?? volume) * _mixerMaster * _deviceVolume;
-            MgSoundEffectInstance inst = effect.CreateInstance();
+            inst = effect.CreateInstance();
             inst.Volume = Math.Clamp(gain, 0f, 1f);
             bool loop = category.Name.IndexOf("Music", StringComparison.OrdinalIgnoreCase) >= 0;
             inst.IsLooped = loop;
             inst.Play();
-            return new MonoGameAudioInstance(inst, category);
+            // Instance takes ownership of non-cached effects; clear local flags so catch doesn't double-dispose.
+            var owned = ownsEffect ? effect : null;
+            ownsEffect = false;
+            effect = null;
+            var handed = inst;
+            inst = null;
+            return new MonoGameAudioInstance(handed, category, owned);
         }
         catch (Exception ex)
         {
+            inst?.Dispose();
+            if (ownsEffect)
+                effect?.Dispose();
             Log.Warning($"MonoGamePlaybackEngine.Play failed ({audioFile}): {ex.Message}");
             return null;
         }
     }
 
-    MgSoundEffect? GetOrLoad(string path)
+    MgSoundEffect? GetOrLoad(string path, bool memoryCache, out bool ownsEffect)
     {
-        lock (CacheLock)
+        ownsEffect = false;
+
+        if (memoryCache)
         {
-            if (Cache.TryGetValue(path, out MgSoundEffect? cached) && cached is { IsDisposed: false })
-                return cached;
-            if (FailedLoads.ContainsKey(path))
-                return null;
+            lock (CacheLock)
+            {
+                if (Cache.TryGetValue(path, out MgSoundEffect? cached) && cached is { IsDisposed: false })
+                    return cached;
+                if (FailedLoads.ContainsKey(path))
+                    return null;
+            }
+        }
+        else
+        {
+            lock (CacheLock)
+            {
+                if (FailedLoads.ContainsKey(path))
+                    return null;
+            }
         }
 
         if (!File.Exists(path))
@@ -82,6 +109,12 @@ internal sealed class MonoGamePlaybackEngine : IDisposable
         try
         {
             MgSoundEffect fx = LoadSoundEffect(path);
+            if (!memoryCache)
+            {
+                ownsEffect = true;
+                return fx;
+            }
+
             lock (CacheLock)
             {
                 if (Cache.TryGetValue(path, out MgSoundEffect? raced) && raced is { IsDisposed: false })
@@ -142,12 +175,14 @@ internal sealed class MonoGamePlaybackEngine : IDisposable
 sealed class MonoGameAudioInstance : IAudioInstance
 {
     MgSoundEffectInstance? Inst;
+    MgSoundEffect? OwnedEffect;
     readonly AudioCategory Category;
 
-    public MonoGameAudioInstance(MgSoundEffectInstance inst, AudioCategory category)
+    public MonoGameAudioInstance(MgSoundEffectInstance inst, AudioCategory category, MgSoundEffect? ownedEffect)
     {
         Inst = inst;
         Category = category;
+        OwnedEffect = ownedEffect;
     }
 
     public bool IsPlaying => Inst is { State: SoundState.Playing };
@@ -180,6 +215,8 @@ sealed class MonoGameAudioInstance : IAudioInstance
         IsDisposed = true;
         Inst?.Dispose();
         Inst = null;
+        OwnedEffect?.Dispose();
+        OwnedEffect = null;
     }
 }
 #endif

@@ -43,17 +43,18 @@ float4 Color;
  * Texture and sampler information
  */
 #if VULKAN
-Texture2D Texture;
+// Explicit t*/s* registers required for mgfxc 3.8.5 Vulkan (see ParticleEffect.fx).
+Texture2D Texture : register(t0);
 bool UseTexture;
 
-SamplerState ClampSampler
+SamplerState ClampSampler : register(s0)
 {
     Filter = Linear;
     AddressU = Clamp;
     AddressV = Clamp;
 };
 
-SamplerState WrapSampler
+SamplerState WrapSampler : register(s1)
 {
     Filter = Linear;
     AddressU = Wrap;

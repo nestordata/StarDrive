@@ -5,6 +5,11 @@
 # Requires: mgfxc (dotnet tool install -g dotnet-mgfxc --version 3.8.5)
 # Vulkan profile uses DXC and does NOT need Wine on macOS.
 #
+# Critical: Texture2D/SamplerState must use register(tN)/register(sN).
+# Without them, mgfxc 3.8.5 writes garbage sampler slots and EffectPass.Apply
+# throws IndexOutOfRangeException. Hand-authored Simple/ParticleEffect and
+# scripts/fx-to-vulkan.py both assign registers.
+#
 # Usage:
 #   bash scripts/rebake-effects-vulkan.sh           # bake all *.fx under Effects/
 #   bash scripts/rebake-effects-vulkan.sh Simple    # bake one effect by base name
@@ -36,13 +41,13 @@ bake_one() {
   local tmp_fx="${TMP_DIR}/${base}.fx"
   local src_dir
   src_dir="$(dirname "$fx")"
-  # Copy includes next to temp fx when present
+  # Copy includes next to temp fx when present (Simple.fxh already has Vulkan registers).
   [[ -f "${FX_DIR}/Simple.fxh" ]] && cp -f "${FX_DIR}/Simple.fxh" "${TMP_DIR}/" 2>/dev/null || true
   local fxh="${src_dir}/${base}.fxh"
   [[ -f "$fxh" ]] && cp -f "$fxh" "${TMP_DIR}/"
 
-  if [[ "$base" == "Simple" ]]; then
-    # Simple.fx already has #if VULKAN branches — compile source directly.
+  if [[ "$base" == "Simple" || "$base" == "ParticleEffect" ]]; then
+    # Hand-authored #if VULKAN branches — compile source directly (no fx-to-vulkan).
     tmp_fx="$fx"
   else
     python3 "${ROOT}/scripts/fx-to-vulkan.py" "$fx" "$tmp_fx"

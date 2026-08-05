@@ -29,8 +29,10 @@ public struct ParticleVertex
 
     public static readonly VertexElement[] VertexElements =
     {
-        new VertexElement(0,  VertexElementFormat.Vector2, VertexElementUsage.Position, 0),
-        new VertexElement(8,  VertexElementFormat.Vector3, VertexElementUsage.Position, 1),
+        // Corner on TexCoord usage-index 2 (see ParticleEffect.fx TEXCOORD2).
+        // Dual POSITION0/POSITION1 broke EffectPass.Apply on DesktopVK/MoltenVK.
+        new VertexElement(0,  VertexElementFormat.Vector2, VertexElementUsage.TextureCoordinate, 2),
+        new VertexElement(8,  VertexElementFormat.Vector3, VertexElementUsage.Position, 0),
         new VertexElement(20, VertexElementFormat.Vector3, VertexElementUsage.Normal, 0),
         new VertexElement(32, VertexElementFormat.Color,   VertexElementUsage.Color, 0),
         new VertexElement(36, VertexElementFormat.Color,   VertexElementUsage.Color, 1),

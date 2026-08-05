@@ -100,7 +100,8 @@ public sealed class ParticleVertexBuffer : IDisposable
         return IsExhausted;
     }
 
-    public void Draw(Effect effect)
+    // @return false if EffectPass.Apply failed (caller should stop using this effect)
+    public bool Draw(Effect effect)
     {
         // nothing to draw?
         int firstActive = FirstActive;
@@ -109,7 +110,7 @@ public sealed class ParticleVertexBuffer : IDisposable
 
         var vbo = VertexBuffer;
         if (numParticles <= 0 || vbo == null)
-            return;
+            return true;
 
         // IsContentLost is obsolete on MonoGame Native (always false) — skip restore branch.
         {
@@ -138,16 +139,25 @@ public sealed class ParticleVertexBuffer : IDisposable
         FirstPending = firstFree;
 
         GraphicsDevice device = Shared.Device;
-        // MonoGame: SetVertexBuffer carries VertexDeclaration; effect/pass Begin/End replaced by Apply.
-        device.SetVertexBuffer(vbo);
-        device.Indices = Shared.IndexBuffer;
-
+        // Apply before binding buffers: on DesktopVK, EffectPass.Apply can IndexOutOfRange
+        // when validating against a mismatched VertexDeclaration already bound.
         foreach (EffectPass pass in effect.CurrentTechnique.Passes)
         {
-            pass.Apply();
+            try
+            {
+                pass.Apply();
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, $"ParticleEffect Apply failed (technique={effect.CurrentTechnique?.Name})");
+                return false;
+            }
+            device.SetVertexBuffer(vbo);
+            device.Indices = Shared.IndexBuffer;
             device.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0,
                                          firstActive * 6, numParticles * 2); // 2 triangles per quad
         }
+        return true;
     }
 
     ~ParticleVertexBuffer()

@@ -64,24 +64,46 @@ def convert(src: str) -> str:
     )
 
     # sampler2D Name [: register(sN)] = sampler_state { ... };
+    # Keep Filter/Address so Vulkan MGFX sampler→texture slots bind like Simple.fxh.
+    def repl_sampler2d(m: re.Match) -> str:
+        name, body = m.group(1), m.group(2)
+        filt = "Linear"
+        if re.search(r"MinFilter\s*=\s*Point", body, re.I):
+            filt = "Point"
+        addr_u = "Clamp"
+        addr_v = "Clamp"
+        if re.search(r"AddressU\s*=\s*Wrap", body, re.I):
+            addr_u = "Wrap"
+        if re.search(r"AddressV\s*=\s*Wrap", body, re.I):
+            addr_v = "Wrap"
+        return (
+            f"SamplerState {name}\n"
+            f"{{\n"
+            f"    Filter = {filt};\n"
+            f"    AddressU = {addr_u};\n"
+            f"    AddressV = {addr_v};\n"
+            f"}};"
+        )
+
     src = re.sub(
         r"sampler2D\s+(\w+)(?:\s*:\s*register\s*\(\s*s\d+\s*\))?\s*"
-        r"=\s*sampler_state\s*\{[\s\S]*?\}\s*;",
-        r"SamplerState \1;",
+        r"=\s*sampler_state\s*\{([\s\S]*?)\}\s*;",
+        repl_sampler2d,
+        src,
+    )
+
+    # bare `sampler Name = sampler_state` (ParticleEffect-style, no 2D suffix)
+    src = re.sub(
+        r"sampler\s+(\w+)(?:\s*:\s*register\s*\(\s*s\d+\s*\))?\s*"
+        r"=\s*sampler_state\s*\{([\s\S]*?)\}\s*;",
+        repl_sampler2d,
         src,
     )
 
     # sampler3D Name = sampler_state { ... };
     src = re.sub(
-        r"sampler3D\s+(\w+)\s*=\s*sampler_state\s*\{[\s\S]*?\}\s*;",
-        r"SamplerState \1;",
-        src,
-    )
-
-    # Drop leftover SamplerState Name = sampler_state { ... };
-    src = re.sub(
-        r"(SamplerState\s+\w+)\s*=\s*sampler_state\s*\{[\s\S]*?\}\s*;",
-        r"\1;",
+        r"sampler3D\s+(\w+)\s*=\s*sampler_state\s*\{([\s\S]*?)\}\s*;",
+        repl_sampler2d,
         src,
     )
 
@@ -133,12 +155,58 @@ def convert(src: str) -> str:
     # Clip-space Position only on *Output* structs (keep VS input POSITION0)
     def fix_output_struct(m: re.Match) -> str:
         body = m.group(0)
-        return re.sub(r"(\bfloat4\s+Position\s*:\s*)POSITION0\b", r"\1SV_POSITION", body)
+        body = re.sub(r"(\bfloat4\s+Position\s*:\s*)POSITION0\b", r"\1SV_POSITION", body)
+        # float2 UVs must not use COLOR* — SPIR-V/Vulkan EffectPass.Apply indexes
+        # COLOR channels as float4 color attrs and OOB-crashes (ParticleEffect).
+        body = re.sub(
+            r"(\bfloat2\s+(?:TextureCoordinate|TexCoord|UV|uv)\s*:\s*)COLOR\d*\b",
+            r"\1TEXCOORD0",
+            body,
+        )
+        return body
 
     src = re.sub(r"struct\s+\w*Output\w*\s*\{[\s\S]*?\}", fix_output_struct, src)
 
     # PS return semantic only: float4 Foo(...) : COLOR0
     src = re.sub(r"(\)\s*:\s*)COLOR0\b", r"\1SV_TARGET", src)
+
+    # mgfxc 3.8.5 Vulkan: without register(tN)/register(sN), SPIR-V reflection
+    # writes garbage SamplerInfo.textureSlot/samplerSlot (often 225/226) and
+    # EffectPass.Apply throws IndexOutOfRangeException on TextureCollection.
+    tex_i = 0
+
+    def add_tex_register(m: re.Match) -> str:
+        nonlocal tex_i
+        kind, name, rest = m.group(1), m.group(2), m.group(3)
+        if re.search(r":\s*register\s*\(", rest):
+            return m.group(0)
+        out = f"{kind} {name} : register(t{tex_i}){rest}"
+        tex_i += 1
+        return out
+
+    src = re.sub(
+        r"\b(Texture[23]D)\s+(\w+)(\s*(?::\s*register\s*\(\s*[ts]\d+\s*\))?\s*;)",
+        add_tex_register,
+        src,
+    )
+
+    samp_i = 0
+
+    def add_samp_register(m: re.Match) -> str:
+        nonlocal samp_i
+        name, maybe_reg, tail = m.group(1), m.group(2) or "", m.group(3)
+        if maybe_reg.strip():
+            return m.group(0)
+        out = f"SamplerState {name} : register(s{samp_i}){tail}"
+        samp_i += 1
+        return out
+
+    # SamplerState Name [ : register(sN) ] { ... };  OR  SamplerState Name;
+    src = re.sub(
+        r"\bSamplerState\s+(\w+)(\s*:\s*register\s*\(\s*s\d+\s*\))?(\s*(?:\{[\s\S]*?\}\s*)?;)",
+        add_samp_register,
+        src,
+    )
 
     return src
 

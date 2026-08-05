@@ -41,9 +41,20 @@ float2 EndSize;
 
 
 // Particle texture and sampler.
+#if VULKAN
+// Explicit t0/s0 required: mgfxc 3.8.5 Vulkan without registers writes
+// garbage textureSlot/samplerSlot (e.g. 225/226) and EffectPass.Apply OOBs.
+Texture2D Texture : register(t0);
+SamplerState ParticleSampler : register(s0)
+{
+    Filter = Linear;
+    AddressU = Clamp;
+    AddressV = Clamp;
+};
+#else
 texture Texture;
 
-sampler Sampler = sampler_state
+sampler ParticleSampler = sampler_state
 {
     Texture = (Texture);
     
@@ -54,6 +65,7 @@ sampler Sampler = sampler_state
     AddressU = Clamp;
     AddressV = Clamp;
 };
+#endif
 
 
 // Vertex shader input structure describes the start position and
@@ -61,8 +73,10 @@ sampler Sampler = sampler_state
 // along with some random values that affect its size and rotation.
 struct VertexShaderInput
 {
-    float2 Corner : POSITION0;
-    float3 Position : POSITION1;
+    // Corner on TEXCOORD2 — Vulkan/SPIR-V is unreliable with two POSITION semantics
+    // (POSITION0 corner + POSITION1 world pos). Match MonoGame vertex usage index 2.
+    float2 Corner : TEXCOORD2;
+    float3 Position : POSITION0;
     float3 Velocity : NORMAL0;
     float4 Color : COLOR0;
     float4 Random : COLOR1;
@@ -74,9 +88,15 @@ struct VertexShaderInput
 // Vertex shader output structure specifies the position and color of the particle.
 struct VertexShaderOutput
 {
+#if VULKAN
+    float4 Position : SV_POSITION;
+#else
     float4 Position : POSITION0;
+#endif
     float4 Color : COLOR0;
-    float2 TextureCoordinate : COLOR1;
+    // TEXCOORD0 — not COLOR1. COLOR interpolators for UVs break MonoGame Vulkan/
+    // SPIR-V pass Apply (index OOB). DX tolerated the XNA-era COLOR1 abuse.
+    float2 TextureCoordinate : TEXCOORD0;
 };
 
 // Apply the camera view and projection transforms.
@@ -292,18 +312,33 @@ VertexShaderOutput StaticNonRotatingVS(VertexShaderInput input)
 }
 
 // Pixel shader for drawing particles.
+#if VULKAN
+float4 ParticlePixelShader(VertexShaderOutput input) : SV_TARGET
+{
+    return Texture.Sample(ParticleSampler, input.TextureCoordinate) * input.Color;
+}
+#else
 float4 ParticlePixelShader(VertexShaderOutput input) : COLOR0
 {
-    return tex2D(Sampler, input.TextureCoordinate) * input.Color;
+    return tex2D(ParticleSampler, input.TextureCoordinate) * input.Color;
 }
+#endif
+
+#if VULKAN
+#define PARTICLE_VS vs_6_0
+#define PARTICLE_PS ps_6_0
+#else
+#define PARTICLE_VS vs_4_0_level_9_1
+#define PARTICLE_PS ps_4_0_level_9_1
+#endif
 
 // Dynamic particles have velocity, rotation, all features
 technique FullDynamicParticles
 {
     pass P0
     {
-        VertexShader = compile vs_4_0_level_9_1 DynamicParticleVS();
-        PixelShader = compile ps_4_0_level_9_1 ParticlePixelShader();
+        VertexShader = compile PARTICLE_VS DynamicParticleVS();
+        PixelShader = compile PARTICLE_PS ParticlePixelShader();
     }
 }
 
@@ -311,8 +346,8 @@ technique DynamicAlignRotationToVelocityParticles
 {
     pass P0
     {
-        VertexShader = compile vs_4_0_level_9_1 DynamicAlignRotationToVelocityVS();
-        PixelShader = compile ps_4_0_level_9_1 ParticlePixelShader();
+        VertexShader = compile PARTICLE_VS DynamicAlignRotationToVelocityVS();
+        PixelShader = compile PARTICLE_PS ParticlePixelShader();
     }
 }
 
@@ -321,8 +356,8 @@ technique DynamicNonRotatingParticles
 {
     pass P0
     {
-        VertexShader = compile vs_4_0_level_9_1 DynamicNonRotatingVS();
-        PixelShader = compile ps_4_0_level_9_1 ParticlePixelShader();
+        VertexShader = compile PARTICLE_VS DynamicNonRotatingVS();
+        PixelShader = compile PARTICLE_PS ParticlePixelShader();
     }
 }
 
@@ -331,17 +366,17 @@ technique StaticRotatingParticles
 {
     pass P0
     {
-        VertexShader = compile vs_4_0_level_9_1 StaticRotatingVS();
-        PixelShader = compile ps_4_0_level_9_1 ParticlePixelShader();
+        VertexShader = compile PARTICLE_VS StaticRotatingVS();
+        PixelShader = compile PARTICLE_PS ParticlePixelShader();
     }
 }
 
 // Static non-rotating particles, never move, never rotate
-technique StaticNonRotatingParticle
+technique StaticNonRotatingParticles
 {
     pass P0
     {
-        VertexShader = compile vs_4_0_level_9_1 StaticNonRotatingVS();
-        PixelShader = compile ps_4_0_level_9_1 ParticlePixelShader();
+        VertexShader = compile PARTICLE_VS StaticNonRotatingVS();
+        PixelShader = compile PARTICLE_PS ParticlePixelShader();
     }
 }

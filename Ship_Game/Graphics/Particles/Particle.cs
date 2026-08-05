@@ -25,6 +25,7 @@ public sealed class Particle : IParticle
     Texture2D ParticleTexture;
     #pragma warning restore CA2213
     Map<string, EffectParameter> FxParams = new();
+    bool ParticleEffectBroken;
 
     // all currently active particle buffers
     Array<ParticleVertexBuffer> Buffers = new();
@@ -149,7 +150,18 @@ public sealed class Particle : IParticle
                 break;
         }
 
-        ParticleEffect.CurrentTechnique = ParticleEffect.Techniques[technique];
+        EffectTechnique tech = ParticleEffect.Techniques[technique]
+            ?? ParticleEffect.Techniques["StaticNonRotatingParticle"]; // legacy singular bake name
+        if (tech == null && ParticleEffect.Techniques.Count > 0)
+            tech = ParticleEffect.Techniques[0];
+        if (tech == null)
+        {
+            Log.Error($"Particle '{Settings.Name}': effect has no techniques");
+            return;
+        }
+        if (tech.Name != technique)
+            Log.Warning($"Particle technique '{technique}' missing on '{Settings.Name}'; using '{tech.Name}'");
+        ParticleEffect.CurrentTechnique = tech;
     }
 
     public ParticleEmitter NewEmitter(float particlesPerSecond, in Vector3 initialPosition)
@@ -257,7 +269,7 @@ public sealed class Particle : IParticle
     public void Draw(in Matrix view, in Matrix projection, bool nearView)
     {
         var buffers = Buffers;
-        if (buffers == null || !IsEnabled || (!nearView && Settings.OnlyNearView))
+        if (buffers == null || !IsEnabled || ParticleEffectBroken || (!nearView && Settings.OnlyNearView))
             return;
 
         bool hasActiveParticles = false;
@@ -287,7 +299,12 @@ public sealed class Particle : IParticle
 
             foreach (var buffer in buffers)
             {
-                buffer.Draw(ParticleEffect);
+                if (!buffer.Draw(ParticleEffect))
+                {
+                    ParticleEffectBroken = true;
+                    Log.Error($"Particle '{Settings.Name}': disabling draws after EffectPass.Apply failure (DesktopVK shader/layout mismatch)");
+                    break;
+                }
             }
 
             RenderStates.DisableAlphaTest(device);
