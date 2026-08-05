@@ -15,6 +15,10 @@ namespace Ship_Game.SpriteSystem
         public int Width;
         public int Height;
         public Texture2D Texture;
+        // CPU-side pixels for atlas packing (png/dds). Avoids Texture2D.SetData/
+        // GetData during CreateAtlas — required on DesktopVK where off-thread
+        // GPU uploads deadlock with Present.
+        public Color[] Colors;
         public bool NoPack; // This texture should not be packed
         // §4.6 #7: when true and the texture is Color+alpha, SaveAsDds writes
         // a PNG (lossless) instead of DXT5 (banded). Set per-folder via
@@ -37,11 +41,17 @@ namespace Ship_Game.SpriteSystem
             Height = texture.Height;
         }
 
-        public override string ToString() => $"X:{X} Y:{Y} W:{Width} H:{Height} Name:{Name} Type:{Type} Format:{Texture?.Format.ToString() ?? ""}";
+        public override string ToString() => $"X:{X} Y:{Y} W:{Width} H:{Height} Name:{Name} Type:{Type} Format:{Texture?.Format.ToString() ?? (Colors != null ? "Color[]" : "")}";
 
         // @note this will destroy Texture after transferring it to atlas
         public void TransferTextureToAtlas(Color[] atlas, int atlasWidth, int atlasHeight)
         {
+            if (Colors != null)
+            {
+                ImageUtils.CopyPixelsWithPadding(atlas, atlasWidth, atlasHeight, X, Y, Colors, Width, Height);
+                return;
+            }
+
             Color[] colorData;
             SurfaceFormat format = Texture.Format;
             if (format == SurfaceFormat.Dxt5)
@@ -77,6 +87,10 @@ namespace Ship_Game.SpriteSystem
         {
             get
             {
+                // Match prior GPU-format behavior: opaque DXT1 sources must not
+                // force AtlasFlags.Alpha (that would rewrite the atlas as Dxt5).
+                if (Colors != null)
+                    return ImageUtils.HasTransparentPixels(Colors, Width, Height);
                 SurfaceFormat format = Texture.Format;
                 return format == SurfaceFormat.Color
                     || format == SurfaceFormat.Dxt5
@@ -86,13 +100,19 @@ namespace Ship_Game.SpriteSystem
 
         public void DisposeTexture()
         {
-            Texture.Dispose(); // save some memory
+            Texture?.Dispose(); // save some memory
             Texture = null;
+            Colors = null;
         }
 
         public string SaveAsPng(string filename)
         {
             string path = Path.ChangeExtension(filename, "png");
+            if (Colors != null)
+            {
+                ImageUtils.SaveAsPng(path, Width, Height, Colors);
+                return path;
+            }
             using FileStream fs = File.Create(path);
             Texture.SaveAsPng(fs, Texture.Width, Texture.Height);
             return path;
@@ -102,6 +122,10 @@ namespace Ship_Game.SpriteSystem
         {
             string ddsPath = Path.ChangeExtension(filename, "dds");
             string pngPath = Path.ChangeExtension(filename, "png");
+
+            if (Colors != null)
+                return SaveColorArrayAsDds(ddsPath, pngPath, Colors);
+
             SurfaceFormat format = Texture.Format;
             if (format == SurfaceFormat.Dxt5 || format == SurfaceFormat.Dxt1)
             {
@@ -125,35 +149,7 @@ namespace Ship_Game.SpriteSystem
             {
                 var color = new Color[Texture.Width * Texture.Height];
                 Texture.GetData(color);
-
-                bool alpha = ImageUtils.HasTransparentPixels(color, Width, Height);
-
-                if (alpha && LosslessAlpha)
-                {
-                    // §4.6 #7: avoid DXT5 alpha-quantization artifacts on smooth
-                    // alpha gradients (UI/node's circular alpha mask read as a
-                    // visible dark ring at the sensor-circle edge in the FOW
-                    // composite). DXT5 alpha is 8-level-per-4x4-block; for
-                    // gradient textures this produces banding that bilinear
-                    // sampling doesn't fully smooth. Folder must be in
-                    // ResourceManager.AtlasLosslessAlphaFolders to opt in;
-                    // game-art atlases (Suns, Nebulas, PlanetTiles, etc.) take
-                    // the DXT5 fast path below — banding is invisible against
-                    // the noisy art content, and PNG encoding is ~20× slower
-                    // per nopack texture on full-rebuild.
-                    //
-                    // Stored non-premultiplied. Most consumers of UI/node use
-                    // additive or SourceAlphaSaturation blends which want
-                    // non-premul source; the only AlphaBlend consumers
-                    // (FleetDesign sensor halo, FOW sensor highlights) must
-                    // pre-multiply their tint at the call site.
-                    ImageUtils.SaveAsPng(pngPath, Width, Height, color);
-                    return pngPath;
-                }
-
-                DDSFlags flags = alpha ? DDSFlags.Dxt5 : DDSFlags.Dxt1;
-                ImageUtils.ConvertToDDS(ddsPath, Width, Height, color, flags);
-                return ddsPath;
+                return SaveColorArrayAsDds(ddsPath, pngPath, color);
             }
             if (format == SurfaceFormat.Bgr32)
             {
@@ -164,6 +160,38 @@ namespace Ship_Game.SpriteSystem
             }
             Log.Error($"Unsupported format '{format}' from texture '{Name}.{Type}': "
                       +"Ensure you are using BGRA32 or BGR32 textures.");
+            return ddsPath;
+        }
+
+        string SaveColorArrayAsDds(string ddsPath, string pngPath, Color[] color)
+        {
+            bool alpha = ImageUtils.HasTransparentPixels(color, Width, Height);
+
+            if (alpha && LosslessAlpha)
+            {
+                // §4.6 #7: avoid DXT5 alpha-quantization artifacts on smooth
+                // alpha gradients (UI/node's circular alpha mask read as a
+                // visible dark ring at the sensor-circle edge in the FOW
+                // composite). DXT5 alpha is 8-level-per-4x4-block; for
+                // gradient textures this produces banding that bilinear
+                // sampling doesn't fully smooth. Folder must be in
+                // ResourceManager.AtlasLosslessAlphaFolders to opt in;
+                // game-art atlases (Suns, Nebulas, PlanetTiles, etc.) take
+                // the DXT5 fast path below — banding is invisible against
+                // the noisy art content, and PNG encoding is ~20× slower
+                // per nopack texture on full-rebuild.
+                //
+                // Stored non-premultiplied. Most consumers of UI/node use
+                // additive or SourceAlphaSaturation blends which want
+                // non-premul source; the only AlphaBlend consumers
+                // (FleetDesign sensor halo, FOW sensor highlights) must
+                // pre-multiply their tint at the call site.
+                ImageUtils.SaveAsPng(pngPath, Width, Height, color);
+                return pngPath;
+            }
+
+            DDSFlags flags = alpha ? DDSFlags.Dxt5 : DDSFlags.Dxt1;
+            ImageUtils.ConvertToDDS(ddsPath, Width, Height, color, flags);
             return ddsPath;
         }
     }

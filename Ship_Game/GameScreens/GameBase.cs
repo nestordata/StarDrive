@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -40,6 +41,43 @@ namespace Ship_Game
 
         public int FrameId { get; protected set; }
         public UpdateTimes Elapsed { get; protected set; }
+
+        // DesktopVK/MoltenVK deadlocks if Texture2D.SetData/GetData runs off the
+        // main thread while Present is in flight. Background loaders enqueue GPU
+        // work here; Update pumps it before screen updates each frame.
+        readonly ConcurrentQueue<Action> PendingMainThreadActions = new();
+
+        /// <summary>
+        /// Run <paramref name="action"/> on the game/UI thread. If already on that
+        /// thread, runs inline; otherwise blocks until the next <see cref="PumpMainThreadActions"/>.
+        /// </summary>
+        public void InvokeOnMainThread(Action action)
+        {
+            if (action == null) throw new ArgumentNullException(nameof(action));
+            if (Thread.CurrentThread.ManagedThreadId == MainThreadId)
+            {
+                action();
+                return;
+            }
+
+            Exception error = null;
+            using var done = new ManualResetEventSlim(false);
+            PendingMainThreadActions.Enqueue(() =>
+            {
+                try { action(); }
+                catch (Exception e) { error = e; }
+                finally { done.Set(); }
+            });
+            done.Wait();
+            if (error != null)
+                throw new Exception("InvokeOnMainThread failed", error);
+        }
+
+        public void PumpMainThreadActions()
+        {
+            while (PendingMainThreadActions.TryDequeue(out Action action))
+                action();
+        }
 
         /// <summary>
         /// Total elapsed Game time while the Game window has been active
@@ -285,6 +323,9 @@ namespace Ship_Game
                 TotalElapsed = (float)gameTime.TotalGameTime.TotalSeconds;
                 float deltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
                 Elapsed = new UpdateTimes(deltaTime, TotalElapsed);
+
+                // Drain GPU uploads from background loaders before any screen work.
+                PumpMainThreadActions();
 
                 if (IsDeviceGood) // only Update if device is OK
                 {

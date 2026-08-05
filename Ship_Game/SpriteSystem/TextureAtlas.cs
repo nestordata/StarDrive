@@ -284,7 +284,11 @@ namespace Ship_Game.SpriteSystem
 
                 GameLoadingScreen.SetStatus("CreateAtlas", folder);
                 atlas.CreateAtlas(files);
+#if !STARDIVE_DESKTOPVK
+                // Full GC + finalizers while Vulkan Present is in flight can deadlock
+                // texture disposal on DesktopVK; WindowsDX tolerates this fine.
                 HelperFunctions.CollectMemorySilent();
+#endif
                 return atlas;
             }
             catch (Exception e)

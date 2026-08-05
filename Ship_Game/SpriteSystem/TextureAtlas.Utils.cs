@@ -1,7 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using Microsoft.Xna.Framework.Graphics;
+using Color = Microsoft.Xna.Framework.Color;
 using SDUtils;
+using Ship_Game.Data.Texture;
 
 namespace Ship_Game.SpriteSystem
 {
@@ -20,8 +23,26 @@ namespace Ship_Game.SpriteSystem
                 FileInfo info = textureFiles[i];
                 string texName = info.NameNoExt();
                 string ext = info.Extension.Substring(1);
-                Texture2D tex = ResourceManager.RootContent.LoadUncachedTexture(info, ext);
                 bool noPack = noPackAll || ignore.Contains(texName);
+
+                // Decode png/dds on the CPU only. Uploading via Texture2D.SetData from
+                // the background load thread deadlocks MoltenVK against Present.
+                if (TryLoadColors(info, ext, out Color[] colors, out int width, out int height))
+                {
+                    textures[i] = new TextureInfo
+                    {
+                        Name          = texName,
+                        Type          = ext,
+                        Width         = width,
+                        Height        = height,
+                        Colors        = colors,
+                        NoPack        = noPack,
+                        LosslessAlpha = losslessAlpha,
+                    };
+                    continue;
+                }
+
+                Texture2D tex = ResourceManager.RootContent.LoadUncachedTexture(info, ext);
                 textures[i] = new TextureInfo
                 {
                     Name           = texName,
@@ -34,6 +55,35 @@ namespace Ship_Game.SpriteSystem
                 };
             }
             return textures;
+        }
+
+        static bool TryLoadColors(FileInfo info, string ext, out Color[] colors, out int width, out int height)
+        {
+            colors = null;
+            width = height = 0;
+            try
+            {
+                if (ext.Equals("png", StringComparison.OrdinalIgnoreCase))
+                {
+                    colors = ImageUtils.LoadPngColors(info.FullName, out width, out height);
+                    return colors != null;
+                }
+                if (ext.Equals("dds", StringComparison.OrdinalIgnoreCase))
+                {
+                    colors = ImageUtils.LoadDdsColors(info.FullName, out width, out height);
+                    return colors != null;
+                }
+            }
+            catch (Exception e)
+            {
+#if STARDIVE_DESKTOPVK
+                // Off-thread GPU upload deadlocks MoltenVK; do not fall back.
+                throw new Exception($"CreateTextureInfos CPU load failed: {info.FullName}", e);
+#else
+                Log.Warning($"CreateTextureInfos CPU load failed {info.FullName}: {e.Message}; falling back to GPU load");
+#endif
+            }
+            return false;
         }
 
         static FileInfo[] GatherUniqueTextures(string folder)

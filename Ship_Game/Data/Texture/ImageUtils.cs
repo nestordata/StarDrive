@@ -85,15 +85,22 @@ namespace Ship_Game.Data.Texture
         // CreateAtlasTexture and LoadDds calls to PremultiplyAlpha are now no-ops
         // for already-premul data. Net effect: every path converges to "premul'd
         // on GPU exactly once".
-        public static Texture2D LoadPng(GraphicsDevice device, string filename, bool premultiplyAlpha = true)
+        /// <summary>
+        /// Decode PNG to Color[] without creating a GPU texture. Used by atlas
+        /// packing so background loaders never call Texture2D.SetData.
+        /// </summary>
+        public static Color[] LoadPngColors(string filename, out int width, out int height,
+                                            bool premultiplyAlpha = true)
         {
-            Texture2D tex = null;
-            void OnLoaded(Color[] color, int size, int width, int height)
+            Color[] colors = null;
+            int w = 0, h = 0;
+            void OnLoaded(Color[] color, int size, int loadedW, int loadedH)
             {
                 if (premultiplyAlpha)
                     PremultiplyAlpha(color, size);
-                tex = new Texture2D(device, width, height, false, SurfaceFormat.Color);
-                tex.SetData(color);
+                colors = color;
+                w = loadedW;
+                h = loadedH;
             }
 
             IntPtr error = LoadPNGImage(filename, OnLoaded);
@@ -102,10 +109,23 @@ namespace Ship_Game.Data.Texture
                 string message = Marshal.PtrToStringAnsi(error);
                 throw new Exception($"Load PNG {filename} failed: {message}");
             }
-            return tex;
+            if (colors == null || w == 0 || h == 0)
+                throw new Exception($"Load PNG {filename} failed: no pixels");
+            width = w;
+            height = h;
+            return colors;
         }
 
-        public static Texture2D LoadDds(GraphicsDevice device, string filename)
+        public static Texture2D LoadPng(GraphicsDevice device, string filename, bool premultiplyAlpha = true)
+        {
+            Color[] colors = LoadPngColors(filename, out int width, out int height, premultiplyAlpha);
+            return CreateColorTexture(device, width, height, colors);
+        }
+
+        /// <summary>
+        /// Decode DDS to premul Color[] without creating a GPU texture.
+        /// </summary>
+        public static Color[] LoadDdsColors(string filename, out int width, out int height)
         {
             using FileStream fs = File.OpenRead(filename);
             var dds = new DxtReader(fs);
@@ -151,8 +171,44 @@ namespace Ship_Game.Data.Texture
                 // to match that contract.
                 PremultiplyAlpha(dds.DecodedImage, pixelCount);
             }
-            var tex = new Texture2D(device, dds.Width, dds.Height, false, SurfaceFormat.Color);
-            tex.SetData(dds.DecodedImage, 0, pixelCount);
+
+            width = dds.Width;
+            height = dds.Height;
+            if (dds.DecodedImage.Length == pixelCount)
+                return dds.DecodedImage;
+
+            var trimmed = new Color[pixelCount];
+            Array.Copy(dds.DecodedImage, trimmed, pixelCount);
+            return trimmed;
+        }
+
+        public static Texture2D LoadDds(GraphicsDevice device, string filename)
+        {
+            Color[] colors = LoadDdsColors(filename, out int width, out int height);
+            return CreateColorTexture(device, width, height, colors);
+        }
+
+        /// <summary>
+        /// Upload Color[] as a SurfaceFormat.Color texture. On DesktopVK this is
+        /// marshalled to the main thread (MoltenVK deadlocks off-thread SetData).
+        /// </summary>
+        public static Texture2D CreateColorTexture(GraphicsDevice device, int width, int height, Color[] colors)
+        {
+            Texture2D tex = null;
+            void Upload()
+            {
+                tex = new Texture2D(device, width, height, false, SurfaceFormat.Color);
+                tex.SetData(colors, 0, width * height);
+            }
+
+#if STARDIVE_DESKTOPVK
+            if (GameBase.Base != null)
+                GameBase.Base.InvokeOnMainThread(Upload);
+            else
+                Upload();
+#else
+            Upload();
+#endif
             return tex;
         }
 
