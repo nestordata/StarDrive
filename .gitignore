@@ -172,6 +172,8 @@ x64Migration/phase4-logs/
 
 # MonoGame / SharpDX runtime DLLs copied alongside StarDrive.exe by the build.
 game/MonoGame.Framework.dll
+game/SharpJaad.dll
+game/SharpJaad.AAC.dll
 game/SharpDX.dll
 game/SharpDX.D3DCompiler.dll
 game/SharpDX.DXGI.dll

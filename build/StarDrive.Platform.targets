@@ -23,6 +23,12 @@
     <PackageReference Include="MonoGame.Runtime.Windows.Vulkan" Version="$(MonoGameVersionDesktopVK)" Condition="'$(StarDriveBundleAllVulkanRuntimes)' == 'true'" />
   </ItemGroup>
 
+  <!-- DesktopVK: decode Content AAC/.m4a (Windows uses NAudio+MediaFoundation). -->
+  <ItemGroup Condition="'$(StarDrivePlatform)' == 'DesktopVK' AND '$(StarDriveIsGameProject)' == 'true'">
+    <PackageReference Include="SharpJaad" Version="0.1.1" />
+    <PackageReference Include="SharpJaad.AAC" Version="0.1.1" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(StarDrivePlatform)' == 'WindowsDX' AND '$(StarDriveIsGameProject)' == 'true'">
     <PackageReference Include="SharpDX" Version="4.0.1" />
     <PackageReference Include="SharpDX.DXGI" Version="4.0.1" />

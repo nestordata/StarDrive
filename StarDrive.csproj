@@ -628,6 +628,7 @@
     <Compile Include="Ship_Game\ExceptionViewer.DesktopVK.cs" />
     <Compile Include="Ship_Game\Audio\AudioDevices.DesktopVK.cs" />
     <Compile Include="Ship_Game\Audio\DesktopVk\MonoGamePlaybackEngine.cs" />
+    <Compile Include="Ship_Game\Audio\DesktopVk\M4aPcmDecoder.cs" />
     <Compile Include="Ship_Game\Graphics\MemoryPressure.DesktopVK.cs" />
     <Compile Include="Ship_Game\ExceptionViewer.cs">
       <SubType>Form</SubType>

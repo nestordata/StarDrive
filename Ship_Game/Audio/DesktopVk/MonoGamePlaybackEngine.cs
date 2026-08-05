@@ -12,11 +12,15 @@ namespace Ship_Game.Audio.DesktopVk;
 
 /// <summary>
 /// DesktopVK audio backend using MonoGame/FAudio SoundEffect.
+/// Content ships AAC .m4a (Windows decodes via NAudio+MF); we decode with SharpJaad
+/// into PCM16 then upload to FAudio.
 /// </summary>
 internal sealed class MonoGamePlaybackEngine : IDisposable
 {
     readonly object CacheLock = new();
     readonly Map<string, MgSoundEffect> Cache = new();
+    // Remember permanent load failures so Update/play loops don't spam the log.
+    readonly Map<string, string> FailedLoads = new();
     float _mixerMaster = 1f;
     float _deviceVolume = 1f;
 
@@ -65,23 +69,62 @@ internal sealed class MonoGamePlaybackEngine : IDisposable
         {
             if (Cache.TryGetValue(path, out MgSoundEffect? cached) && cached is { IsDisposed: false })
                 return cached;
+            if (FailedLoads.ContainsKey(path))
+                return null;
         }
 
         if (!File.Exists(path))
-            return null;
-
-        using var fs = File.OpenRead(path);
-        var fx = MgSoundEffect.FromStream(fs);
-        lock (CacheLock)
         {
-            if (Cache.TryGetValue(path, out MgSoundEffect? raced) && raced is { IsDisposed: false })
-            {
-                fx.Dispose();
-                return raced;
-            }
-            Cache[path] = fx;
-            return fx;
+            RememberFailure(path, "file not found");
+            return null;
         }
+
+        try
+        {
+            MgSoundEffect fx = LoadSoundEffect(path);
+            lock (CacheLock)
+            {
+                if (Cache.TryGetValue(path, out MgSoundEffect? raced) && raced is { IsDisposed: false })
+                {
+                    fx.Dispose();
+                    return raced;
+                }
+                Cache[path] = fx;
+                return fx;
+            }
+        }
+        catch (Exception ex)
+        {
+            RememberFailure(path, ex.Message);
+            Log.Warning($"MonoGamePlaybackEngine.Load failed ({path}): {ex.Message}");
+            return null;
+        }
+    }
+
+    static MgSoundEffect LoadSoundEffect(string path)
+    {
+        if (M4aPcmDecoder.IsSupportedPath(path))
+        {
+            M4aPcmDecoder.PcmClip clip = M4aPcmDecoder.DecodeFile(path);
+            AudioChannels channels = clip.Channels switch
+            {
+                1 => AudioChannels.Mono,
+                2 => AudioChannels.Stereo,
+                _ => throw new InvalidOperationException(
+                    $"Unsupported channel count {clip.Channels} in '{path}'")
+            };
+            return new MgSoundEffect(clip.Pcm16, clip.SampleRate, channels);
+        }
+
+        // WAV / other formats FAudio can parse from a stream.
+        using var fs = File.OpenRead(path);
+        return MgSoundEffect.FromStream(fs);
+    }
+
+    void RememberFailure(string path, string reason)
+    {
+        lock (CacheLock)
+            FailedLoads[path] = reason;
     }
 
     public void Dispose()
@@ -91,6 +134,7 @@ internal sealed class MonoGamePlaybackEngine : IDisposable
             foreach (MgSoundEffect fx in Cache.Values)
                 fx?.Dispose();
             Cache.Clear();
+            FailedLoads.Clear();
         }
     }
 }
