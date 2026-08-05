@@ -5,9 +5,10 @@ if(APPLE)
 endif()
 
 # Cross-platform SDNative (Apple Silicon / Linux). Windows continues to use SDNative.vcxproj.
-# Phase 2–4: build WITHOUT Autodesk FBX. Phase 5 can re-enable FBX when SDK + NanoMesh submodule exist.
+# FBX: when SDNATIVE_ENABLE_FBX=ON and the platform runtime is present, NanoMesh uses the
+# same Mesh_Fbx.cpp path as Windows (FbxToOpenGL, materials, skinning).
 
-option(SDNATIVE_ENABLE_FBX "Link Autodesk FBX SDK" OFF)
+option(SDNATIVE_ENABLE_FBX "Link Autodesk FBX SDK" ON)
 option(SDNATIVE_ENABLE_MESH "Build NanoMesh / SdMesh (requires NanoMesh + ReCpp submodules)" ON)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -71,8 +72,56 @@ endif()
 
 add_library(SDNative SHARED ${SDNATIVE_SOURCES})
 
-if(NOT SDNATIVE_ENABLE_FBX)
+# Resolve Autodesk FBX runtime for this host
+set(SDNATIVE_FBX_READY FALSE)
+set(SDNATIVE_FBX_DYLIB "")
+if(SDNATIVE_ENABLE_FBX AND SDNATIVE_ENABLE_MESH AND HAVE_NANOMESH)
+  if(APPLE)
+    set(_fbx_dylib "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/fbxsdk/macos/libfbxsdk.dylib")
+    if(EXISTS "${_fbx_dylib}")
+      set(SDNATIVE_FBX_READY TRUE)
+      set(SDNATIVE_FBX_DYLIB "${_fbx_dylib}")
+    else()
+      message(WARNING
+        "SDNATIVE_ENABLE_FBX=ON but ${_fbx_dylib} missing. "
+        "Run: bash scripts/fetch-fbxsdk-macos.sh — building with NANOMESH_NO_FBX stubs.")
+    endif()
+  elseif(WIN32)
+    # Windows uses SDNative.vcxproj; CMake path is not the primary Windows build.
+    set(SDNATIVE_FBX_READY TRUE)
+  else()
+    message(WARNING
+      "SDNATIVE_ENABLE_FBX=ON on this platform but no Linux FBX runtime is vendored yet. "
+      "Building with NANOMESH_NO_FBX stubs.")
+  endif()
+endif()
+
+if(SDNATIVE_FBX_READY)
+  # Mesh.h defaults ENABLE_FBX_MESH_LOADER to (_WIN32) only — force on for Mac/Linux too.
+  target_compile_definitions(SDNative PRIVATE ENABLE_FBX_MESH_LOADER=1)
+  target_include_directories(SDNative PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/fbxsdk
+  )
+  if(APPLE AND SDNATIVE_FBX_DYLIB)
+    target_link_libraries(SDNative PRIVATE "${SDNATIVE_FBX_DYLIB}")
+    # System deps already linked by libfbxsdk.dylib; keep xml2/iconv available for static edge cases.
+    target_link_libraries(SDNative PRIVATE xml2 iconv z
+      "-framework CoreFoundation"
+      "-framework CoreServices"
+      "-framework SystemConfiguration"
+    )
+    # Embed @rpath so libSDNative finds libfbxsdk next to the executable / itself.
+    set_target_properties(SDNative PROPERTIES
+      BUILD_RPATH "@loader_path;@loader_path/.."
+      INSTALL_RPATH "@loader_path;@loader_path/.."
+    )
+    message(STATUS "FBX SDK: enabled (macOS) → ${SDNATIVE_FBX_DYLIB}")
+  else()
+    message(STATUS "FBX SDK: enabled")
+  endif()
+else()
   target_compile_definitions(SDNative PRIVATE NANOMESH_NO_FBX=1)
+  message(STATUS "FBX SDK: disabled (NANOMESH_NO_FBX)")
 endif()
 
 target_include_directories(SDNative PRIVATE

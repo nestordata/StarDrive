@@ -315,7 +315,8 @@ public:
                 const RecordType* lParent = mParent;
                 const RecordType* lNode = this;
 
-                while (lParent && lParent->mLefttChild == lNode)
+                // Typo in Autodesk FBX SDK 2020.3.7 headers (mLefttChild); Clang rejects it.
+                while (lParent && lParent->mLeftChild == lNode)
                 {
                     lNode = lParent;
                     lParent = lParent->mParent;

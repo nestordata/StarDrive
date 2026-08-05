@@ -77,12 +77,11 @@ else
   log "Vulkan effects present (Content/Effects/Vulkan)"
 fi
 
-# OBJ sidecars for meshes — Mac libSDNative has NANOMESH_NO_FBX until Autodesk SDK.
+# Optional Assimp OBJ sidecars — only a fallback if FBX open fails (Linux / missing SDK).
+# macOS builds link Autodesk FBX 2020.3.7 (same NanoMesh Mesh_Fbx path as Windows).
 if command -v assimp >/dev/null 2>&1; then
-  log "Ensuring .obj sidecars for .fbx meshes (assimp)"
-  bash "${ROOT}/scripts/convert-fbx-to-obj.sh" || log "WARN: FBX→OBJ conversion had failures"
-else
-  log "WARN: assimp not installed — ship .fbx will not load until Phase 5 FBX SDK or: brew install assimp && bash scripts/convert-fbx-to-obj.sh"
+  log "Optional: refreshing .obj sidecars for .fbx (Assimp fallback only)"
+  bash "${ROOT}/scripts/convert-fbx-to-obj.sh" || log "WARN: FBX→OBJ conversion had failures (OK if FBX SDK is linked)"
 fi
 
 log "dotnet restore + build (DesktopVK / ${RID})"
@@ -107,13 +106,20 @@ dotnet publish "${ROOT}/StarDrive.csproj" \
   --self-contained true \
   -o "${OUT}"
 
-# Ensure native lib from build-sdnative is present (publish may not copy it)
+# Ensure native libs from build-sdnative are present (publish may not copy them)
 if [[ -f "${OUT}/libSDNative.dylib" ]]; then
   :
 elif [[ -f "${ROOT}/game/libSDNative.dylib" ]]; then
   cp -f "${ROOT}/game/libSDNative.dylib" "${OUT}/libSDNative.dylib"
 else
   die "libSDNative.dylib missing after native build"
+fi
+if [[ -f "${ROOT}/SDNative/3rdparty/fbxsdk/macos/libfbxsdk.dylib" ]]; then
+  cp -f "${ROOT}/SDNative/3rdparty/fbxsdk/macos/libfbxsdk.dylib" "${OUT}/libfbxsdk.dylib"
+elif [[ -f "${ROOT}/game/libfbxsdk.dylib" ]]; then
+  cp -f "${ROOT}/game/libfbxsdk.dylib" "${OUT}/libfbxsdk.dylib"
+else
+  log "WARN: libfbxsdk.dylib missing — FBX meshes need: bash scripts/fetch-fbxsdk-macos.sh"
 fi
 
 # Prefer @executable_path for dylib lookup next to the apphost.

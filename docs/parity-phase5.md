@@ -4,10 +4,11 @@ Phase 4 validates a playable Mac/Linux install. Phase 5 closes remaining gaps vs
 
 ## 5a — Autodesk FBX on Mac/Linux
 
-- [ ] Obtain Autodesk FBX SDK for macOS arm64 + Linux
-- [ ] CMake `-DSDNATIVE_ENABLE_FBX=ON` and drop `NANOMESH_NO_FBX`
-- [ ] MeshImporter / asteroid `.fbx` tests green on Mac
+- [x] Obtain Autodesk FBX SDK for macOS arm64 (2020.3.7 universal → thin arm64 in `3rdparty/fbxsdk/macos/`)
+- [x] CMake `-DSDNATIVE_ENABLE_FBX=ON` + `ENABLE_FBX_MESH_LOADER=1` when runtime present
+- [ ] MeshImporter / asteroid `.fbx` smoke green on Mac (visual parity vs Windows)
 - [ ] Document modder `.fbx` workflow
+- [ ] Vendor Linux FBX runtime + wire CMake
 
 ## 5b — Video playback
 

@@ -31,9 +31,9 @@ namespace Ship_Game.Data.Mesh
             {
                 mesh = SDMeshOpen(meshPath);
 #if STARDIVE_DESKTOPVK
-                // Mac/Linux libSDNative is built with NANOMESH_NO_FBX until Autodesk
-                // FBX SDK is vendored. Prefer a sibling .obj produced by
-                // scripts/convert-fbx-to-obj.sh (assimp).
+                // Last-resort only: when libSDNative was built without FBX (e.g. Linux
+                // before a runtime is vendored), fall back to a sibling Assimp .obj.
+                // macOS DesktopVK links Autodesk FBX 2020.3.7 — same Mesh_Fbx path as Windows.
                 if (mesh == null
                     && meshPath.EndsWith(".fbx", StringComparison.OrdinalIgnoreCase))
                 {
@@ -42,8 +42,8 @@ namespace Ship_Game.Data.Mesh
                     {
                         mesh = SDMeshOpen(objPath);
                         if (mesh != null)
-                            Log.Info(ConsoleColor.DarkCyan,
-                                $"ImportStaticMesh '{meshName}': FBX unsupported; loaded sibling '{Path.GetFileName(objPath)}'");
+                            Log.Warning(
+                                $"ImportStaticMesh '{meshName}': FBX open failed; loaded sibling '{Path.GetFileName(objPath)}' (build SDNative with FBX for Windows parity)");
                     }
                 }
 #endif

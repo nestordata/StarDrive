@@ -660,6 +660,18 @@ namespace Ship_Game.Data.Mesh
             }
         }
 
+        static string[] FindSiblingDiffuseDds(string absDir)
+        {
+            string[] dds = Directory.GetFiles(absDir, "*_d.dds");
+            if (dds.Length == 0)
+                dds = Directory.GetFiles(absDir, "*_d.DDS");
+            if (dds.Length == 0)
+                dds = Directory.GetFiles(absDir, "*_d_0.dds");
+            if (dds.Length == 0)
+                dds = Directory.GetFiles(absDir, "*_d_0.DDS");
+            return dds;
+        }
+
         // When FBX→OBJ conversion drops material texture paths, pick the best
         // sibling DDS set in the model directory (*_d / *_d_0 / *_n / *_s / *_e).
         protected static void TryFillMapsFromSiblingDds(string modelDir, string materialFile,
@@ -671,13 +683,19 @@ namespace Ship_Game.Data.Mesh
 
             string stem = Path.GetFileNameWithoutExtension(materialFile) ?? "";
             // Terran-style fighter1_d.dds and race-style ship17_d_0.dds.
-            string[] dds = Directory.GetFiles(absDir, "*_d.dds");
+            // Remnant/etc. often keep maps in the race parent folder while the
+            // mesh lives in a variant subfolder — search parent as fallback.
+            string[] dds = FindSiblingDiffuseDds(absDir);
+            string texDir = absDir;
             if (dds.Length == 0)
-                dds = Directory.GetFiles(absDir, "*_d.DDS");
-            if (dds.Length == 0)
-                dds = Directory.GetFiles(absDir, "*_d_0.dds");
-            if (dds.Length == 0)
-                dds = Directory.GetFiles(absDir, "*_d_0.DDS");
+            {
+                string parent = Directory.GetParent(absDir)?.FullName;
+                if (parent != null && Directory.Exists(parent))
+                {
+                    dds = FindSiblingDiffuseDds(parent);
+                    texDir = parent;
+                }
+            }
             if (dds.Length == 0)
                 return;
 
@@ -705,13 +723,20 @@ namespace Ship_Game.Data.Mesh
             {
                 foreach (string suffix in suffixes)
                 {
-                    string file = Path.Combine(absDir, baseName + suffix);
+                    string file = Path.Combine(texDir, baseName + suffix);
                     if (!File.Exists(file))
                         continue;
-                    string rel = string.IsNullOrEmpty(modelDir)
-                        ? Path.GetFileName(file)
-                        : Path.Combine(modelDir, Path.GetFileName(file));
-                    return rel.Replace('\\', '/');
+                    // Content-relative path: same folder as the model, or ../ when
+                    // the map was found in the race parent directory.
+                    string fileName = Path.GetFileName(file);
+                    if (string.IsNullOrEmpty(modelDir))
+                        return fileName;
+                    if (string.Equals(texDir, absDir, StringComparison.OrdinalIgnoreCase))
+                        return Path.Combine(modelDir, fileName).Replace('\\', '/');
+                    string parentModelDir = Path.GetDirectoryName(modelDir)?.Replace('\\', '/') ?? "";
+                    return string.IsNullOrEmpty(parentModelDir)
+                        ? fileName
+                        : (parentModelDir + "/" + fileName);
                 }
                 return "";
             }
