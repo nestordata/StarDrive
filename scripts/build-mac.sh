@@ -77,6 +77,14 @@ else
   log "Vulkan effects present (Content/Effects/Vulkan)"
 fi
 
+# OBJ sidecars for meshes — Mac libSDNative has NANOMESH_NO_FBX until Autodesk SDK.
+if command -v assimp >/dev/null 2>&1; then
+  log "Ensuring .obj sidecars for .fbx meshes (assimp)"
+  bash "${ROOT}/scripts/convert-fbx-to-obj.sh" || log "WARN: FBX→OBJ conversion had failures"
+else
+  log "WARN: assimp not installed — ship .fbx will not load until Phase 5 FBX SDK or: brew install assimp && bash scripts/convert-fbx-to-obj.sh"
+fi
+
 log "dotnet restore + build (DesktopVK / ${RID})"
 mkdir -p "${OUT}" "${ROOT}/artifacts"
 dotnet restore "${ROOT}/StarDrive.csproj" -p:StarDrivePlatform=DesktopVK -r "${RID}"

@@ -30,6 +30,23 @@ namespace Ship_Game.Data.Mesh
             try
             {
                 mesh = SDMeshOpen(meshPath);
+#if STARDIVE_DESKTOPVK
+                // Mac/Linux libSDNative is built with NANOMESH_NO_FBX until Autodesk
+                // FBX SDK is vendored. Prefer a sibling .obj produced by
+                // scripts/convert-fbx-to-obj.sh (assimp).
+                if (mesh == null
+                    && meshPath.EndsWith(".fbx", StringComparison.OrdinalIgnoreCase))
+                {
+                    string objPath = Path.ChangeExtension(meshPath, ".obj");
+                    if (File.Exists(objPath))
+                    {
+                        mesh = SDMeshOpen(objPath);
+                        if (mesh != null)
+                            Log.Info(ConsoleColor.DarkCyan,
+                                $"ImportStaticMesh '{meshName}': FBX unsupported; loaded sibling '{Path.GetFileName(objPath)}'");
+                    }
+                }
+#endif
                 if (mesh == null)
                 {
                     if (!File.Exists(meshPath))
@@ -229,9 +246,17 @@ namespace Ship_Game.Data.Mesh
                 {
                     if (ptr == 0)
                     {
-                        materials[ptr] = isSkinned
+                        LightingEffect bare = isSkinned
                             ? new SkinnedLightingEffect(Device)
                             : new LightingEffect(Device);
+                        TryFillMapsFromSiblingDds(ModelDirectory(modelName), modelName, bare);
+                        bare.DiffuseMapTexture = TryLoadTexture(Content, bare.DiffuseMapFile);
+                        bare.NormalMapTexture = TryLoadTexture(Content, bare.NormalMapFile);
+                        bare.SpecularColorMapTexture = TryLoadTexture(Content, bare.SpecularColorMapFile);
+                        bare.EmissiveMapTexture = TryLoadTexture(Content, bare.EmissiveMapFile);
+                        if (bare.DiffuseColor.X < 0.05f && bare.DiffuseColor.Y < 0.05f && bare.DiffuseColor.Z < 0.05f)
+                            bare.DiffuseColor = Vector3.One;
+                        materials[ptr] = bare;
                     }
                     else
                     {

@@ -15,6 +15,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Ship_Game;
 
 namespace SynapseGaming.LightingSystem.Core
 {
@@ -478,9 +479,20 @@ namespace SynapseGaming.LightingSystem.Core
                 GraphicsDevice.Indices = rm.IndexBuffer;
                 foreach (EffectPass pass in fx.CurrentTechnique.Passes)
                 {
-                    pass.Apply();
-                    GraphicsDevice.DrawIndexedPrimitives(rm.PrimitiveType,
-                        rm.BaseVertex, rm.StartIndex, rm.PrimitiveCount);
+                    try
+                    {
+                        pass.Apply();
+                        GraphicsDevice.DrawIndexedPrimitives(rm.PrimitiveType,
+                            rm.BaseVertex, rm.StartIndex, rm.PrimitiveCount);
+                    }
+                    catch (Exception e)
+                    {
+                        // DesktopVK: broken MGFX (e.g. SkinnedEffect Bones CB) must not
+                        // take down the process; MoltenVK null-pipeline is a native SEGV
+                        // and cannot be caught — this covers managed Apply failures.
+                        Log.Warning($"SceneObject draw Apply/Draw failed ({so.Name}): {e.GetType().Name}: {e.Message}");
+                        break;
+                    }
                 }
             }
         }

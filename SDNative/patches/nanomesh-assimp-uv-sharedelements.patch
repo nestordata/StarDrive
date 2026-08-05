@@ -1,0 +1,51 @@
+From a3442f66dd68964d08c45f30f82838d84d8282d5 Mon Sep 17 00:00:00 2001
+From: Nestor <contact@nestor-data.com>
+Date: Wed, 5 Aug 2026 15:52:52 -0500
+Subject: [PATCH] Treat Assimp-style UV pools as SharedElements in OBJ/TXT
+ loaders.
+
+When numCoords is between 0 and numVerts, CoordsMapping was left unset
+(Assert only), so PerVertexFlatten skipped UV expansion. Map that case
+to SharedElements like normals already do.
+
+---
+ src/Mesh_Obj.cpp | 6 +++++-
+ src/Mesh_Txt.cpp | 2 +-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/src/Mesh_Obj.cpp b/src/Mesh_Obj.cpp
+index 46213a2..5c6abd6 100644
+--- a/src/Mesh_Obj.cpp
++++ b/src/Mesh_Obj.cpp
+@@ -455,10 +455,14 @@ namespace Nano
+             else if (numNormals == numTris)  g.NormalsMapping = MapMode::PerFace;
+             else if (numNormals >  numVerts) g.NormalsMapping = MapMode::PerFaceVertex;
+             else                             g.NormalsMapping = MapMode::SharedElements;
++            // Assimp (and many exporters) emit fewer unique UVs than positions
++            // (indexed vt pool). Treat like normals' SharedElements so
++            // OptimizedFlatten / PerVertexFlatten expands UVs instead of
++            // leaving CoordsMapping=None with a non-empty Coords array.
+             if      (numCoords == 0)         g.CoordsMapping  = MapMode::None;
+             else if (numCoords == numVerts)  g.CoordsMapping  = MapMode::PerVertex;
+             else if (numCoords >  numVerts)  g.CoordsMapping  = MapMode::PerFaceVertex;
+-            else Assert(false, "Unfamiliar CoordsMapping mode");
++            else                             g.CoordsMapping  = MapMode::SharedElements;
+ 
+             //LogInfo("BuildGroup %s elapsed: %.1fms", g.Name, t.elapsed_ms());
+         }
+diff --git a/src/Mesh_Txt.cpp b/src/Mesh_Txt.cpp
+index c48ca50..a54ffc0 100644
+--- a/src/Mesh_Txt.cpp
++++ b/src/Mesh_Txt.cpp
+@@ -114,7 +114,7 @@ namespace Nano
+         if      (numCoords == 0)         g.CoordsMapping  = MapMode::None;
+         else if (numCoords == numVerts)  g.CoordsMapping  = MapMode::PerVertex;
+         else if (numCoords >  numVerts)  g.CoordsMapping  = MapMode::PerFaceVertex;
+-        else Assert(false, "Unfamiliar CoordsMapping mode");
++        else                             g.CoordsMapping  = MapMode::SharedElements;
+     }
+ 
+     static void BuildGroups(Mesh& mesh)
+-- 
+2.47.0
+

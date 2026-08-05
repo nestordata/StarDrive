@@ -84,6 +84,21 @@ struct VertexShaderInput
     float Time : TEXCOORD1;
 };
 
+// Static techniques never read Velocity. Declaring NORMAL0 and then letting the
+// compiler strip it leaves a SPIR-V Location hole (TEXCOORD1 stays at Loc 6).
+// MonoGame DesktopVK binds Vk locations by Attributes[] index (location=i), so
+// holes make TEXCOORD1 miss the descriptor → MoltenVK pipeline compile failure.
+// Omit NORMAL0 here so locations stay contiguous 0..5.
+struct VertexShaderInputStatic
+{
+    float2 Corner : TEXCOORD2;
+    float3 Position : POSITION0;
+    float4 Color : COLOR0;
+    float4 Random : COLOR1;
+    float Scale : TEXCOORD0;
+    float Time : TEXCOORD1;
+};
+
 
 // Vertex shader output structure specifies the position and color of the particle.
 struct VertexShaderOutput
@@ -278,7 +293,7 @@ VertexShaderOutput DynamicNonRotatingVS(VertexShaderInput input)
     return output;
 }
 
-VertexShaderOutput StaticRotatingVS(VertexShaderInput input)
+VertexShaderOutput StaticRotatingVS(VertexShaderInputStatic input)
 {
     VertexShaderOutput output;
     
@@ -295,7 +310,7 @@ VertexShaderOutput StaticRotatingVS(VertexShaderInput input)
     return output;
 }
 
-VertexShaderOutput StaticNonRotatingVS(VertexShaderInput input)
+VertexShaderOutput StaticNonRotatingVS(VertexShaderInputStatic input)
 {
     VertexShaderOutput output;
     

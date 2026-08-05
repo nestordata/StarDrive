@@ -586,6 +586,10 @@ namespace Ship_Game.Data.Mesh
             fx.EmissiveMapFile       = RebaseAbsolute(mat->EmissivePath.AsString, modelDir);
             fx.NormalMapFile         = RebaseAbsolute(mat->NormalPath.AsString,   modelDir);
             fx.SpecularColorMapFile  = RebaseAbsolute(mat->SpecularPath.AsString, modelDir);
+            // OBJ sidecars (DesktopVK / Assimp) often lose FBX texture refs.
+            // Fall back to sibling *_d.dds / *_n.dds / *_s.dds in the model folder.
+            if (fx.DiffuseMapFile.IsEmpty())
+                TryFillMapsFromSiblingDds(modelDir, materialFile, fx);
             //fx.DiffuseAmbientMapFile = "";
             //fx.ParallaxMapFile       = "";
             fx.DiffuseMapTexture = TryLoadTexture(content, fx.DiffuseMapFile);
@@ -641,7 +645,7 @@ namespace Ship_Game.Data.Mesh
             return fx;
         }
 
-        static Texture2D TryLoadTexture(GameContentManager content, string texturePath)
+        protected static Texture2D TryLoadTexture(GameContentManager content, string texturePath)
         {
             if (texturePath.IsEmpty())
                 return null;
@@ -656,11 +660,76 @@ namespace Ship_Game.Data.Mesh
             }
         }
 
+        // When FBX→OBJ conversion drops material texture paths, pick the best
+        // sibling DDS set in the model directory (*_d / *_d_0 / *_n / *_s / *_e).
+        protected static void TryFillMapsFromSiblingDds(string modelDir, string materialFile,
+            LightingEffect fx)
+        {
+            string absDir = RawContentLoader.GetContentPath(modelDir);
+            if (!Directory.Exists(absDir))
+                return;
+
+            string stem = Path.GetFileNameWithoutExtension(materialFile) ?? "";
+            // Terran-style fighter1_d.dds and race-style ship17_d_0.dds.
+            string[] dds = Directory.GetFiles(absDir, "*_d.dds");
+            if (dds.Length == 0)
+                dds = Directory.GetFiles(absDir, "*_d.DDS");
+            if (dds.Length == 0)
+                dds = Directory.GetFiles(absDir, "*_d_0.dds");
+            if (dds.Length == 0)
+                dds = Directory.GetFiles(absDir, "*_d_0.DDS");
+            if (dds.Length == 0)
+                return;
+
+            string pick = dds[0];
+            foreach (string candidate in dds)
+            {
+                string name = Path.GetFileNameWithoutExtension(candidate) ?? "";
+                // Prefer maps whose stem shares the model name (Fighter1 → fighter1_d).
+                if (stem.Length > 0
+                    && name.StartsWith(stem, StringComparison.OrdinalIgnoreCase))
+                {
+                    pick = candidate;
+                    break;
+                }
+            }
+
+            string baseName = Path.GetFileNameWithoutExtension(pick) ?? "";
+            // Strip _d_0 then _d so Rel can re-append channel suffixes.
+            if (baseName.EndsWith("_d_0", StringComparison.OrdinalIgnoreCase))
+                baseName = baseName.Substring(0, baseName.Length - 4);
+            else if (baseName.EndsWith("_d", StringComparison.OrdinalIgnoreCase))
+                baseName = baseName.Substring(0, baseName.Length - 2);
+
+            string Rel(params string[] suffixes)
+            {
+                foreach (string suffix in suffixes)
+                {
+                    string file = Path.Combine(absDir, baseName + suffix);
+                    if (!File.Exists(file))
+                        continue;
+                    string rel = string.IsNullOrEmpty(modelDir)
+                        ? Path.GetFileName(file)
+                        : Path.Combine(modelDir, Path.GetFileName(file));
+                    return rel.Replace('\\', '/');
+                }
+                return "";
+            }
+
+            fx.DiffuseMapFile = Rel("_d.dds", "_d_0.dds");
+            if (fx.NormalMapFile.IsEmpty())
+                fx.NormalMapFile = Rel("_n.dds", "_n_0.dds");
+            if (fx.SpecularColorMapFile.IsEmpty())
+                fx.SpecularColorMapFile = Rel("_s.dds", "_s_0.dds");
+            if (fx.EmissiveMapFile.IsEmpty())
+                fx.EmissiveMapFile = Rel("_e.dds", "_e_0.dds", "_g.dds", "_g_0.dds");
+        }
+
         // "mod Model/Cardassia/Car_Hideki" → "mod Model/Cardassia/"
         // The model name passed to CreateMaterialEffect is a content-relative
         // logical path (no extension); take its directory as the search root for
         // sibling textures referenced via absolute paths inside the FBX.
-        static string ModelDirectory(string modelName)
+        protected static string ModelDirectory(string modelName)
         {
             if (modelName.IsEmpty()) return "";
             string dir = Path.GetDirectoryName(modelName) ?? "";

@@ -12,6 +12,18 @@ if [[ ! -f "${ROOT}/SDNative/ReCpp/src/rpp/strview.h" ]] || [[ ! -f "${ROOT}/SDN
   exit 1
 fi
 
+# Assimp OBJ UV pools: map 0 < numCoords < numVerts as SharedElements.
+# Kept as a StarDrive patch until it lands on gkapulis/NanoMesh (no push access here).
+NANOMESH_PATCH="${ROOT}/SDNative/patches/nanomesh-assimp-uv-sharedelements.patch"
+if [[ -f "${NANOMESH_PATCH}" ]]; then
+  if git -C "${ROOT}/SDNative/NanoMesh" apply --reverse --check "${NANOMESH_PATCH}" >/dev/null 2>&1; then
+    : # already applied
+  else
+    git -C "${ROOT}/SDNative/NanoMesh" apply "${NANOMESH_PATCH}" \
+      || echo "WARN: NanoMesh Assimp UV patch failed to apply (already applied or conflict)"
+  fi
+fi
+
 mkdir -p "${BUILD_DIR}" "${OUT_DIR}"
 cmake -S "${ROOT}/SDNative" -B "${BUILD_DIR}" \
   -DCMAKE_BUILD_TYPE=Release \

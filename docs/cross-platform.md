@@ -24,9 +24,9 @@ Spike: `tools/DesktopVkSpike` (see NOTES.md).
 
 ## Known Phase 4 gaps
 
-- Runtime `.fbx` loading disabled (`NANOMESH_NO_FBX`)
+- Runtime Autodesk FBX disabled (`NANOMESH_NO_FBX`) — DesktopVK loads sibling `.obj` sidecars from `scripts/convert-fbx-to-obj.sh` (requires `assimp`). Skinned animation still needs Phase 5 FBX SDK.
 - Videos disabled (`GlobalStats.VideoDisabled`)
 - Auto-updater elevation is Windows-centric
-- Effect shaders still primarily DirectX_11 `.mgfxo` — run `scripts/rebake-effects-vulkan.sh` when `mgfxc` is available
+- Effect shaders: run `scripts/rebake-effects-vulkan.sh` when `mgfxc` is available; Texture2D/SamplerState need `register(tN)`/`register(sN)` for Vulkan Apply
 
 See [parity-phase5.md](parity-phase5.md) and [upstream-sync.md](upstream-sync.md).
