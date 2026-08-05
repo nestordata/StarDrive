@@ -1,7 +1,11 @@
-# File produced by Open Asset Import Library (http://www.assimp.sf.net)
-# (assimp v6.0.0)
-
+# StarDrive DesktopVK sidecar (Assimp + FbxToOpenGL remap)
 newmtl DefaultMaterial
-Kd 0.800000012 0.800000012 0.800000012
-illum 1
-
+Kd 1.0 1.0 1.0
+Ka 0.0 0.0 0.0
+Ks 0.5 0.5 0.5
+Ns 32
+illum 2
+map_Kd ship13_d.dds
+map_bump ship13_n.dds
+map_Ks ship13_s.dds
+map_Ke ship14_g.dds
