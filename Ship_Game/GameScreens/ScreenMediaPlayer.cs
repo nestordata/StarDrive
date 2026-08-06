@@ -213,7 +213,12 @@ namespace Ship_Game.GameScreens
                             return;
                         }
 
-                        Rect = new Rectangle(0, 0, Player.Width, Player.Height);
+                        // Callers (GameLoadingScreen, DiplomacyScreen) often set Rect for
+                        // layout immediately after PlayVideo returns. Open runs async on
+                        // DesktopVK — only default to native size at (0,0) if still empty,
+                        // otherwise we'd yank the splash/loading clip to the top-left.
+                        if (Rect.Width <= 0 || Rect.Height <= 0)
+                            Rect = new Rectangle(0, 0, Player.Width, Player.Height);
                         Player.Play();
                         if (startPaused)
                         {
