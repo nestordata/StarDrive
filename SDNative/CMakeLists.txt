@@ -4,7 +4,7 @@ if(APPLE)
   enable_language(OBJCXX)
 endif()
 
-# Cross-platform SDNative (Apple Silicon / Linux). Windows continues to use SDNative.vcxproj.
+# SDNative CMake for Apple Silicon (DesktopVK). Windows continues to use SDNative.vcxproj.
 # FBX: when SDNATIVE_ENABLE_FBX=ON and the platform runtime is present, NanoMesh uses the
 # same Mesh_Fbx.cpp path as Windows (FbxToOpenGL, materials, skinning).
 
@@ -91,21 +91,11 @@ if(SDNATIVE_ENABLE_FBX AND SDNATIVE_ENABLE_MESH AND HAVE_NANOMESH)
   elseif(WIN32)
     # Windows uses SDNative.vcxproj; CMake path is not the primary Windows build.
     set(SDNATIVE_FBX_READY TRUE)
-  else()
-    set(_fbx_so "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/fbxsdk/linux/libfbxsdk.so")
-    if(EXISTS "${_fbx_so}")
-      set(SDNATIVE_FBX_READY TRUE)
-      set(SDNATIVE_FBX_DYLIB "${_fbx_so}")
-    else()
-      message(WARNING
-        "SDNATIVE_ENABLE_FBX=ON but ${_fbx_so} missing. "
-        "Run: bash scripts/fetch-fbxsdk-linux.sh — building with NANOMESH_NO_FBX stubs.")
-    endif()
   endif()
 endif()
 
 if(SDNATIVE_FBX_READY)
-  # Mesh.h defaults ENABLE_FBX_MESH_LOADER to (_WIN32) only — force on for Mac/Linux too.
+  # Mesh.h defaults ENABLE_FBX_MESH_LOADER to (_WIN32) only — force on for macOS too.
   target_compile_definitions(SDNative PRIVATE ENABLE_FBX_MESH_LOADER=1)
   target_include_directories(SDNative PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/fbxsdk
@@ -124,13 +114,6 @@ if(SDNATIVE_FBX_READY)
       INSTALL_RPATH "@loader_path;@loader_path/.."
     )
     message(STATUS "FBX SDK: enabled (macOS) → ${SDNATIVE_FBX_DYLIB}")
-  elseif(UNIX AND NOT APPLE AND SDNATIVE_FBX_DYLIB)
-    target_link_libraries(SDNative PRIVATE "${SDNATIVE_FBX_DYLIB}" xml2 z)
-    set_target_properties(SDNative PROPERTIES
-      BUILD_RPATH "$ORIGIN;$ORIGIN/.."
-      INSTALL_RPATH "$ORIGIN;$ORIGIN/.."
-    )
-    message(STATUS "FBX SDK: enabled (Linux) → ${SDNATIVE_FBX_DYLIB}")
   else()
     message(STATUS "FBX SDK: enabled")
   endif()
@@ -153,17 +136,6 @@ if(SDNATIVE_ENABLE_FFMPEG)
       message(WARNING
         "SDNATIVE_ENABLE_FFMPEG=ON but ${_ff_root} incomplete. "
         "Run: bash scripts/fetch-ffmpeg-macos.sh — building SDVideo stubs.")
-    endif()
-  elseif(UNIX AND NOT APPLE)
-    set(_ff_root "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/ffmpeg/linux")
-    if(EXISTS "${_ff_root}/include/libavformat/avformat.h"
-       AND EXISTS "${_ff_root}/lib/libavformat.so")
-      set(SDNATIVE_FFMPEG_READY TRUE)
-      set(SDNATIVE_FFMPEG_ROOT "${_ff_root}")
-    else()
-      message(WARNING
-        "SDNATIVE_ENABLE_FFMPEG=ON but Linux FFmpeg not vendored yet (${_ff_root}). "
-        "Building SDVideo stubs.")
     endif()
   endif()
 endif()

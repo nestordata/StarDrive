@@ -1,14 +1,13 @@
 # Phase 5 — Full parity checklist
 
-Phase 4 validates a playable Mac/Linux install. Phase 5 closes remaining gaps vs Windows Jupiter.
+Phase 4 validates a playable Mac Apple Silicon install. Phase 5 closes remaining gaps vs Windows Jupiter.
 
-## 5a — Autodesk FBX on Mac/Linux
+## 5a — Autodesk FBX on macOS
 
 - [x] Obtain Autodesk FBX SDK for macOS arm64 (2020.3.7 universal → thin arm64 in `3rdparty/fbxsdk/macos/`)
 - [x] CMake `-DSDNATIVE_ENABLE_FBX=ON` + `ENABLE_FBX_MESH_LOADER=1` when runtime present
 - [x] MeshImporter / asteroid `.fbx` smoke green on Mac (Autodesk path; visual confirm in-game)
-- [x] Document modder `.fbx` workflow ([cross-platform.md](cross-platform.md))
-- [x] Linux FBX CMake wire + fetch instructions (`3rdparty/fbxsdk/linux/`, `scripts/fetch-fbxsdk-linux.sh`) — runtime binary still maintainer-supplied
+- [x] Document modder `.fbx` workflow ([macos-arm64.md](macos-arm64.md))
 
 ## 5b — Video playback
 
@@ -20,11 +19,11 @@ Phase 4 validates a playable Mac/Linux install. Phase 5 closes remaining gaps vs
 
 ## 5c — Updater / install UX
 
-- [x] Mac/Linux in-app update path (no Windows `runas` — `AutoPatcher.NeedsElevation` false on DesktopVK)
-- [x] DesktopVK content-bridge AutoUpdate: apply shared Content from Windows GitHub ZIPs; skip binaries/runtimeconfig (see [cross-platform.md](cross-platform.md) — Paths A/B/C)
+- [x] Mac in-app update path (no Windows `runas` — `AutoPatcher.NeedsElevation` false on DesktopVK)
+- [x] DesktopVK content-bridge AutoUpdate: apply shared Content from Windows GitHub ZIPs; skip binaries/runtimeconfig (see [macos-arm64.md](macos-arm64.md) — Paths A/B/C)
 - [x] Maintainer bridge script [`scripts/apply-win-patch-content.sh`](../scripts/apply-win-patch-content.sh) for WMV→MP4 / Vulkan rebake overlays
 - [x] Code signing + notarization notes ([mac-notarization.md](mac-notarization.md))
-- [x] Linux desktop entry helper (`scripts/install-linux-desktop.sh`); AppImage noted as follow-up
+- [x] New-machine bootstrap [`scripts/macos-dev-setup.sh`](../scripts/macos-dev-setup.sh)
 
 ## 5d — Visual / systems parity
 
@@ -36,7 +35,7 @@ Phase 4 validates a playable Mac/Linux install. Phase 5 closes remaining gaps vs
 
 ## 5e — Acceptance
 
-- [x] Docs updated ([cross-platform.md](cross-platform.md), this file)
+- [x] Docs updated ([macos-arm64.md](macos-arm64.md), this file)
 - [ ] Parity matrix green (or consciously waived) after CA + visual playtest sign-off
 
-Player-facing target: same campaign/skirmish/mod content, audio, video, FBX mods, and update flow as Windows Jupiter on this fork’s Mac/Linux builds.
+Player-facing target: same campaign/skirmish/mod content, audio, video, FBX mods, and update flow as Windows Jupiter on this fork’s Mac Apple Silicon builds.

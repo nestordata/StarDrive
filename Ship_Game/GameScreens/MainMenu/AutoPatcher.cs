@@ -122,7 +122,7 @@ internal class AutoPatcher : PopupWindow
     bool NeedsElevation()
     {
 #if !STARDIVE_WINDOWSDX
-        // DesktopVK (Mac/Linux): no Windows UAC / runas. Patches apply in-place under
+        // DesktopVK (macOS): no Windows UAC / runas. Patches apply in-place under
         // the install dir (typically .app/Contents/Resources/game or a user-writable tree).
         return false;
 #else
@@ -828,12 +828,12 @@ internal class AutoPatcher : PopupWindow
                 TryDeleteFolder(GetPatchOutputFolder());
                 AddErrorMessageAndAllowExit(
                     mayStampVanilla
-                        ? "No Mac/Linux Content in this patch (marked applied)"
-                        : "No Mac/Linux Content in this mod patch",
+                        ? "No Mac Content in this patch (marked applied)"
+                        : "No Mac Content in this mod patch",
                     mayStampVanilla
                         ? $"Version {Info.Version} is recorded so AutoUpdate will not ask again. " +
                           "This release had no Content/Mods updates for DesktopVK — Windows binaries were skipped. " +
-                          "C# / native fixes need a new Mac/Linux DMG — see docs/cross-platform.md."
+                          "C# / native fixes need a new Mac DMG — see docs/macos-arm64.md."
                         : "This mod release had no Content/Mods files for DesktopVK. Try again later or update the mod manually.");
                 return;
             }
@@ -882,7 +882,7 @@ internal class AutoPatcher : PopupWindow
                 RunOnNextFrame(() =>
                 {
                     var label = ProgressSteps.AddLabel(
-                        "Content update applied (Mac/Linux binary unchanged)");
+                        "Content update applied (Mac binary unchanged)");
                     label.Color = Color.Yellow;
                 });
             }

@@ -2,8 +2,8 @@
 # Build a DesktopVK-safe Content overlay from a Windows GitHub patch ZIP.
 #
 # Extracts Content/ (+ Mods/), converts WMV→MP4 when present, rebakes Vulkan
-# effects when .fx sources change, optionally refreshes FBX→OBJ sidecars.
-# Never copies Windows binaries / runtimeconfig / managed host assemblies.
+# effects when .fx sources change. Never copies Windows binaries / runtimeconfig /
+# managed host assemblies. Mac uses Autodesk FBX (no Assimp OBJ sidecar step).
 #
 # Usage:
 #   bash scripts/apply-win-patch-content.sh /path/to/WindowsPatch.zip \
@@ -12,31 +12,26 @@
 #   bash scripts/apply-win-patch-content.sh /path/to/WindowsPatch.zip \
 #     --apply-to "/Applications/StarDrive.app/Contents/Resources/game"
 #
-#   bash scripts/apply-win-patch-content.sh /path/to/extracted-or-zip \
-#     --out artifacts/mac-content-overlay --with-fbx-obj
-#
 # Flags:
 #   --out DIR          Write filtered overlay (Content/, Mods/) here
 #   --apply-to DIR     Also rsync overlay into an install/game directory
-#   --with-fbx-obj     Run convert-fbx-to-obj.sh on staged Content
 #   --force-video      Re-encode mp4 even if sibling exists
 #
-# Requires (as needed): unzip, ffmpeg (for .wmv), mgfxc + python3 (for .fx),
-# assimp (for --with-fbx-obj). See docs/cross-platform.md Path B.
+# Requires (as needed): unzip, ffmpeg (for .wmv), mgfxc + python3 (for .fx).
+# See docs/macos-arm64.md Path B.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SRC=""
 OUT=""
 APPLY_TO=""
-WITH_FBX_OBJ=0
 FORCE_VIDEO=0
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 log() { echo "==> $*"; }
 
 usage() {
-  sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,26p' "$0" | sed 's/^# \{0,1\}//'
   exit 1
 }
 
@@ -44,7 +39,6 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --out) OUT="${2:-}"; shift 2 ;;
     --apply-to) APPLY_TO="${2:-}"; shift 2 ;;
-    --with-fbx-obj) WITH_FBX_OBJ=1; shift ;;
     --force-video) FORCE_VIDEO=1; shift ;;
     -h|--help) usage ;;
     -*) die "unknown flag: $1" ;;
@@ -163,11 +157,6 @@ strip_non_vulkan_shaders() {
 }
 strip_non_vulkan_shaders "${OVERLAY}/Content/Effects"
 strip_non_vulkan_shaders "${OVERLAY}/Content/3DParticles"
-
-if [[ "$WITH_FBX_OBJ" -eq 1 ]]; then
-  log "Refreshing FBX→OBJ sidecars under staged Content"
-  bash "${ROOT}/scripts/convert-fbx-to-obj.sh" "${OVERLAY}/Content" || log "WARN: FBX→OBJ had failures"
-fi
 
 # Never ship Windows binaries if they snuck into Content/ (paranoia).
 find "${OVERLAY}" -type f \( \

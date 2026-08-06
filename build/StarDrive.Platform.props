@@ -4,9 +4,9 @@
 
     StarDrivePlatform:
       - WindowsDX  → net8.0-windows + MonoGame.Framework.WindowsDX (community default)
-      - DesktopVK  → net8.0 + MonoGame.Framework.Native + Vulkan runtimes (Mac/Linux)
+      - DesktopVK  → net8.0 + MonoGame.Framework.Native + Mac.Vulkan (Apple Silicon)
 
-    Default: WindowsDX on Windows hosts, DesktopVK everywhere else.
+    Default: WindowsDX on Windows hosts, DesktopVK on macOS.
     Override: /p:StarDrivePlatform=DesktopVK  (or WindowsDX)
   -->
   <PropertyGroup>
@@ -40,6 +40,5 @@
     <DefineConstants>$(DefineConstants);STARDIVE_DESKTOPVK</DefineConstants>
     <MonoGamePlatform Condition="'$(StarDriveIsGameOrGfxProject)' == 'true'">DesktopVK</MonoGamePlatform>
     <RuntimeIdentifier Condition="'$(StarDriveIsGameOrGfxProject)' == 'true' AND '$(RuntimeIdentifier)' == '' AND $([MSBuild]::IsOSPlatform('OSX'))">osx-arm64</RuntimeIdentifier>
-    <RuntimeIdentifier Condition="'$(StarDriveIsGameOrGfxProject)' == 'true' AND '$(RuntimeIdentifier)' == '' AND $([MSBuild]::IsOSPlatform('Linux'))">linux-x64</RuntimeIdentifier>
   </PropertyGroup>
 </Project>

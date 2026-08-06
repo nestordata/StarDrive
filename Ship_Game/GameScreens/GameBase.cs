@@ -116,7 +116,7 @@ namespace Ship_Game
             // Do NOT ApplyChanges() here. On DesktopVK, that creates the Vulkan device via
             // SDL_Vulkan_GetInstanceExtensions before Game.Run() has created an SDL window,
             // which null-derefs inside libmgruntime (MGG_GraphicsSystem_Create).
-            // MonoGame creates the device on Run() once the window exists — matching DesktopVkSpike.
+            // MonoGame creates the device on Run() once the window exists.
             IsMouseVisible = true;
 #else
             Graphics.ApplyChanges();

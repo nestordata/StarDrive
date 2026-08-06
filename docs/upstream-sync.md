@@ -1,6 +1,6 @@
 # Upstream sync (personal fork)
 
-This fork tracks [TeamStarDrive/StarDrive](https://github.com/TeamStarDrive/StarDrive) while carrying DesktopVK / Mac / Linux work on `cross-platform`.
+This fork tracks [TeamStarDrive/StarDrive](https://github.com/TeamStarDrive/StarDrive) while carrying macOS Apple Silicon DesktopVK work on `macos-arm64`.
 
 ## Remotes
 
@@ -15,10 +15,10 @@ git remote -v
 
 ```bash
 git fetch upstream
-git checkout cross-platform
+git checkout macos-arm64
 git rebase upstream/main
 # resolve conflicts — usually csproj / Platform / SDNative/CMakeLists / scripts
-git push --force-with-lease origin cross-platform   # only on your fork branch
+git push --force-with-lease origin macos-arm64   # only on your fork branch
 ```
 
 Prefer **rebase** so Mac-specific commits stay on top of community `main`.
@@ -31,9 +31,9 @@ Keep these when merging upstream:
 |------|-----|
 | `build/StarDrive.Platform.*` | Dual-host TFM / package selection |
 | `Ship_Game/Platform/**` | Facades |
-| `SDNative/CMakeLists.txt` | Unix native build |
-| `scripts/**` | Mac/Linux publish |
-| `.github/workflows/cross-platform.yml` | Multi-OS CI |
+| `SDNative/CMakeLists.txt` | macOS native build |
+| `scripts/**` | Mac publish / content-bridge |
+| `.github/workflows/macos-arm64.yml` | Mac CI |
 | `#if STARDIVE_DESKTOPVK` / `STARDIVE_WINDOWSDX` gates | Dual compile |
 
 ## Upstream PR strategy

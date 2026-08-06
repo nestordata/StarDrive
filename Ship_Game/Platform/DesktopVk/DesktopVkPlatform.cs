@@ -73,23 +73,18 @@ public sealed class DesktopVkClipboard : IClipboard
     {
         try
         {
-            // Best-effort: pbcopy on macOS, xclip/wl-copy on Linux when available.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            // DesktopVK product host is macOS Apple Silicon — pbcopy only.
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                return;
+            using var p = Process.Start(new ProcessStartInfo
             {
-                using var p = Process.Start(new ProcessStartInfo
-                {
-                    FileName = "pbcopy",
-                    RedirectStandardInput = true,
-                    UseShellExecute = false
-                });
-                p?.StandardInput.Write(text);
-                p?.StandardInput.Close();
-                p?.WaitForExit(1000);
-            }
-            else
-            {
-                File.WriteAllText(Path.Combine(Path.GetTempPath(), "stardrive-clipboard.txt"), text);
-            }
+                FileName = "pbcopy",
+                RedirectStandardInput = true,
+                UseShellExecute = false
+            });
+            p?.StandardInput.Write(text);
+            p?.StandardInput.Close();
+            p?.WaitForExit(1000);
         }
         catch { /* ignore */ }
     }

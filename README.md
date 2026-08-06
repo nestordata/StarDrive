@@ -13,7 +13,7 @@ Do not attempt to circumvent game DRM. Be reasonably respectful of the dev and t
 # System Requirements
 
 * **OS**: Windows 10 version 1803+ / Windows 11 (x64) — community default  
-  **Experimental fork builds**: macOS Apple Silicon (DesktopVK / MoltenVK) and Linux x64 — see [docs/cross-platform.md](docs/cross-platform.md)
+  **Fork builds**: macOS Apple Silicon (DesktopVK / MoltenVK) — see [docs/macos-arm64.md](docs/macos-arm64.md)
 * **Architecture**: 64-bit
 * **.NET runtime**: bundled with the installer (.NET 8)
 
@@ -70,6 +70,7 @@ What the Mars line delivered (1.50 / 1.51), now preserved on the [`mars-1.51`](h
 * [Clone](https://confluence.atlassian.com/sourcetreekb/clone-a-repository-into-sourcetree-780870050.html) this repository to a local directory, for example: C:/Projects/BlackBox
     * Advanced Options When cloning: [v] Recurse submodules _(Important!!!)_
 * The active development branch is `main` (post-migration Jupiter line). The Mars-line legacy branch is `mars-1.51`.
+* **macOS Apple Silicon (this fork):** checkout `macos-arm64` and run `bash scripts/macos-dev-setup.sh` — see [docs/macos-arm64.md](docs/macos-arm64.md).
 * Launch Visual Studio, any required DLL references should be in `BlackBox/game` directory.
 * Launch a full build (Build -> Build Solution) in `Release|x64` configuration to produce the BlackBox StarDrive executable.
     * If you get this build error: "Windows 10 SDK is not installed", then you need to go back to Visual Studio installer and enable Desktop development with C++

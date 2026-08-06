@@ -15,11 +15,9 @@
     <PackageReference Include="MonoGame.Framework.Native" Version="$(MonoGameVersionDesktopVK)" />
     <PackageReference Include="MonoGame.Content.Builder.Task" Version="$(MonoGameVersionDesktopVK)" />
     <PackageReference Include="MonoGame.Runtime.Mac.Vulkan" Version="$(MonoGameVersionDesktopVK)" Condition="$([MSBuild]::IsOSPlatform('OSX'))" />
-    <PackageReference Include="MonoGame.Runtime.Linux.Vulkan" Version="$(MonoGameVersionDesktopVK)" Condition="$([MSBuild]::IsOSPlatform('Linux'))" />
     <PackageReference Include="MonoGame.Runtime.Windows.Vulkan" Version="$(MonoGameVersionDesktopVK)" Condition="$([MSBuild]::IsOSPlatform('Windows'))" />
-    <!-- When publishing for a RID that may differ from the build host, include all DesktopVK runtimes. -->
+    <!-- When publishing for a RID that may differ from the build host, include Mac + Windows Vulkan runtimes. -->
     <PackageReference Include="MonoGame.Runtime.Mac.Vulkan" Version="$(MonoGameVersionDesktopVK)" Condition="'$(StarDriveBundleAllVulkanRuntimes)' == 'true'" />
-    <PackageReference Include="MonoGame.Runtime.Linux.Vulkan" Version="$(MonoGameVersionDesktopVK)" Condition="'$(StarDriveBundleAllVulkanRuntimes)' == 'true'" />
     <PackageReference Include="MonoGame.Runtime.Windows.Vulkan" Version="$(MonoGameVersionDesktopVK)" Condition="'$(StarDriveBundleAllVulkanRuntimes)' == 'true'" />
   </ItemGroup>
 

@@ -211,10 +211,8 @@ game/WindowsBase.dll
 game/System.dll
 
 # DesktopVK spike local builds
-tools/DesktopVkSpike/bin/
-tools/DesktopVkSpike/obj/
-
 
 # Assimp debug dumps (do not commit)
 *.assbin
 *.assxml
+.DS_Store

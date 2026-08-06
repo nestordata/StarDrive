@@ -77,12 +77,7 @@ else
   log "Vulkan effects present (Content/Effects/Vulkan)"
 fi
 
-# Optional Assimp OBJ sidecars — only a fallback if FBX open fails (Linux / missing SDK).
 # macOS builds link Autodesk FBX 2020.3.7 (same NanoMesh Mesh_Fbx path as Windows).
-if command -v assimp >/dev/null 2>&1; then
-  log "Optional: refreshing .obj sidecars for .fbx (Assimp fallback only)"
-  bash "${ROOT}/scripts/convert-fbx-to-obj.sh" || log "WARN: FBX→OBJ conversion had failures (OK if FBX SDK is linked)"
-fi
 
 log "dotnet restore + build (DesktopVK / ${RID})"
 mkdir -p "${OUT}" "${ROOT}/artifacts"
