@@ -20,6 +20,10 @@ bash scripts/build-mac.sh
 
 Outputs: `artifacts/osx-arm64/`, `artifacts/StarDrive.app`, `artifacts/StarDrive-mac-arm64.dmg`.
 
+App / DMG icons use checked-in [`Icons/AppIcon.icns`](../Icons/AppIcon.icns) (from `Mars.ico`; regenerate with `bash scripts/macos-make-icns.sh`).
+
+**Updater:** GitHub patch ZIPs are WindowsDX-only. DesktopVK skips the in-game AutoUpdate scan entirely (vanilla and mod DownloadSite) so a Windows patch cannot overwrite `StarDrive.runtimeconfig.json` / managed DLLs inside the `.app`. Mac/Linux updates = new DMG/tarball until platform-specific patch assets exist.
+
 Spike: `tools/DesktopVkSpike` (see NOTES.md).
 
 ## Video (Phase 5b)
@@ -40,8 +44,8 @@ Spike: `tools/DesktopVkSpike` (see NOTES.md).
 
 ## Updater / install
 
-- In-game `AutoUpdateChecker` / `AutoPatcher` still use GitHub Releases.
-- DesktopVK skips Windows UAC `runas`; patches apply in-place under the install / `.app` game dir (user-writable installs).
+- DesktopVK: AutoUpdate scan is **disabled** (Windows patch ZIPs brick self-contained Mac/Linux installs).
+- WindowsDX: `AutoUpdateChecker` / `AutoPatcher` still use GitHub Releases; UAC `runas` when needed.
 - Gatekeeper release signing: [mac-notarization.md](mac-notarization.md).
 - Linux desktop entry helper: `bash scripts/install-linux-desktop.sh artifacts/linux-x64`.
 

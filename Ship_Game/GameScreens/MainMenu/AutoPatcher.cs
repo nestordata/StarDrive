@@ -372,6 +372,13 @@ internal class AutoPatcher : PopupWindow
     {
         try
         {
+#if STARDIVE_DESKTOPVK
+            // Defense in depth: never download Windows GitHub patches onto a Mac/Linux install.
+            Log.Warning($"AutoPatcher: refusing patch '{Info.Name}' on DesktopVK (Windows-only patch channel)");
+            AddErrorMessageAndAllowExit(
+                "Update not available for this platform",
+                "This patch is for the Windows build. Reinstall the Mac/Linux package instead of using in-game AutoUpdate.");
+#else
             TryDeletePatchTemp();
 
             string outputFolder = GetPatchOutputFolder();
@@ -385,6 +392,7 @@ internal class AutoPatcher : PopupWindow
             
             string zipArchive = PostProcessMultipleZipChunks(zipChunks);
             AddProgressAndRunTaskOnNextFrame($"Unzipping {Info.Version}", nextP => Unzip(zipArchive, outputFolder, nextP));
+#endif
         }
         catch (Exception e)
         {

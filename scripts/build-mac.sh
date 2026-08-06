@@ -182,9 +182,14 @@ done
 log "Assembling StarDrive.app"
 rm -rf "${APP}"
 GAME="${APP}/Contents/Resources/game"
-mkdir -p "${APP}/Contents/MacOS" "${GAME}"
+mkdir -p "${APP}/Contents/MacOS" "${APP}/Contents/Resources" "${GAME}"
 
 rsync -a --delete "${OUT}/" "${GAME}/"
+
+# Checked-in icns (regenerate with: bash scripts/macos-make-icns.sh Icons/AppIcon.icns)
+ICNS="${ROOT}/Icons/AppIcon.icns"
+[[ -f "${ICNS}" ]] || die "missing ${ICNS} — run: bash scripts/macos-make-icns.sh Icons/AppIcon.icns"
+cp -f "${ICNS}" "${APP}/Contents/Resources/AppIcon.icns"
 
 log "Compiling native .app launcher"
 clang -O2 -arch arm64 \
@@ -204,6 +209,7 @@ cat > "${APP}/Contents/Info.plist" << 'PLIST'
   <key>CFBundleShortVersionString</key><string>1.60</string>
   <key>CFBundleExecutable</key><string>StarDrive</string>
   <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>LSMinimumSystemVersion</key><string>12.0</string>
   <key>NSHighResolutionCapable</key><true/>
 </dict>
@@ -224,12 +230,60 @@ codesign --verify --verbose=2 "${APP}" || die ".app signature invalid"
 codesign --verify --verbose=2 "${APP}/Contents/MacOS/StarDrive" || die "launcher signature invalid"
 
 # -----------------------------------------------------------------------------
-# DMG
+# DMG (volume icon = Mars / AppIcon.icns)
 # -----------------------------------------------------------------------------
 if [[ "${SKIP_DMG}" -eq 0 ]]; then
-  log "Creating DMG"
+  log "Creating DMG with Mars volume icon"
   rm -f "${DMG}"
-  hdiutil create -volname "StarDrive" -srcfolder "${APP}" -ov -format UDZO "${DMG}"
+  DMG_RW="${ROOT}/artifacts/StarDrive-mac-rw.dmg"
+  rm -f "${DMG_RW}"
+
+  # Stage folder: .app + Applications symlink (standard install UX)
+  STAGE="${ROOT}/artifacts/dmg-stage"
+  rm -rf "${STAGE}"
+  mkdir -p "${STAGE}"
+  cp -R "${APP}" "${STAGE}/StarDrive.app"
+  ln -sf /Applications "${STAGE}/Applications"
+
+  hdiutil create -volname "StarDrive" -srcfolder "${STAGE}" -ov -format UDRW "${DMG_RW}"
+  MOUNT_DIR="${ROOT}/artifacts/dmg-mount"
+  rm -rf "${MOUNT_DIR}"
+  mkdir -p "${MOUNT_DIR}"
+  hdiutil attach -readwrite -noverify -noautoopen -mountpoint "${MOUNT_DIR}" "${DMG_RW}" \
+    || die "failed to mount ${DMG_RW}"
+  cp -f "${ICNS}" "${MOUNT_DIR}/.VolumeIcon.icns"
+  if command -v SetFile >/dev/null 2>&1; then
+    SetFile -c icnC "${MOUNT_DIR}/.VolumeIcon.icns" || true
+    SetFile -a C "${MOUNT_DIR}" || true
+  else
+    # Best-effort Finder custom-icon bit; never fail the build (xattr may be missing).
+    DMG_MOUNT="${MOUNT_DIR}" python3 <<'PY' || true
+import os, sys
+try:
+    import xattr
+except ImportError:
+    print("WARN: python xattr module missing; volume icon file present but custom-icon flag unset")
+    sys.exit(0)
+mount = os.environ["DMG_MOUNT"]
+fi = bytearray(32)
+fi[8] = 0x04  # kHasCustomIcon
+try:
+    xattr.setxattr(mount, "com.apple.FinderInfo", bytes(fi), 0, 0)
+except Exception as e:
+    print("WARN: could not set FinderInfo custom-icon flag:", e)
+PY
+  fi
+  sync
+  hdiutil detach "${MOUNT_DIR}" -quiet || hdiutil detach "${MOUNT_DIR}" -force || true
+  rmdir "${MOUNT_DIR}" 2>/dev/null || true
+  hdiutil convert "${DMG_RW}" -format UDZO -imagekey zlib-level=9 -o "${DMG}"
+  rm -f "${DMG_RW}"
+  rm -rf "${STAGE}"
+
+  # Best-effort: stamp the .dmg file itself in Finder with Mars (needs `fileicon` brew).
+  if command -v fileicon >/dev/null 2>&1; then
+    fileicon set "${DMG}" "${ICNS}" || true
+  fi
 else
   log "Skipping DMG (--skip-dmg)"
 fi

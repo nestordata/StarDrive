@@ -29,7 +29,9 @@ public class AutoUpdateChecker : UIElementContainer
     readonly GameScreen Screen;
     readonly UIList Popups;
     TaskResult AsyncTask;
+#if !STARDIVE_DESKTOPVK
     bool MajorReleaseUpgradeNotified;
+#endif
 
     public AutoUpdateChecker(GameScreen screen) : base(screen.RectF)
     {
@@ -52,6 +54,14 @@ public class AutoUpdateChecker : UIElementContainer
 
         AsyncTask = Parallel.Run(() =>
         {
+            // DesktopVK (Mac/Linux) publishes are self-contained. GitHub vanilla
+            // patch ZIPs are WindowsDX (framework-dependent + Release.DeleteFiles
+            // for Windows Content). Applying them overwrites StarDrive.runtimeconfig.json
+            // / StarDrive.dll and bricks the .app — refuse until platform-specific
+            // patch assets exist.
+#if STARDIVE_DESKTOPVK
+            Log.Write("AutoUpdater: DesktopVK — skipping vanilla GitHub patch scan (Windows-only assets)");
+#else
             string vanillaUrl = GlobalStats.VanillaDefaults.DownloadSite;
             GetVersionAsync("BlackBox", vanillaUrl, isMod: false);
 
@@ -67,6 +77,7 @@ public class AutoUpdateChecker : UIElementContainer
             string modUrl = GlobalStats.ActiveMod?.Settings.DownloadSite;
             if (modUrl != null && vanillaUrl != modUrl)
                 GetVersionAsync(GlobalStats.ModName, modUrl, isMod: true);
+#endif
         });
     }
 
@@ -422,7 +433,9 @@ public class AutoUpdateChecker : UIElementContainer
         if (url == null)
             return;
 
+#if !STARDIVE_DESKTOPVK
         MajorReleaseUpgradeNotified = true;
+#endif
         string displayLabel = BuildMajorUpgradeDisplayLabel(latestVersion, codename);
         Log.Write($"AutoUpdater: Major release {latestVersion} ({displayLabel}) available at {url}");
         Screen.RunOnNextFrame(() =>
