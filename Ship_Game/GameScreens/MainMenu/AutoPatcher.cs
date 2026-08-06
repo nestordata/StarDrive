@@ -372,13 +372,6 @@ internal class AutoPatcher : PopupWindow
     {
         try
         {
-#if STARDIVE_DESKTOPVK
-            // Defense in depth: never download Windows GitHub patches onto a Mac/Linux install.
-            Log.Warning($"AutoPatcher: refusing patch '{Info.Name}' on DesktopVK (Windows-only patch channel)");
-            AddErrorMessageAndAllowExit(
-                "Update not available for this platform",
-                "This patch is for the Windows build. Reinstall the Mac/Linux package instead of using in-game AutoUpdate.");
-#else
             TryDeletePatchTemp();
 
             string outputFolder = GetPatchOutputFolder();
@@ -392,7 +385,6 @@ internal class AutoPatcher : PopupWindow
             
             string zipArchive = PostProcessMultipleZipChunks(zipChunks);
             AddProgressAndRunTaskOnNextFrame($"Unzipping {Info.Version}", nextP => Unzip(zipArchive, outputFolder, nextP));
-#endif
         }
         catch (Exception e)
         {
@@ -547,16 +539,32 @@ internal class AutoPatcher : PopupWindow
             string tempDir = GetPatchTempFolder();
             
             Array<string> filesToDelete = GetFilesToRemove(Path.Combine(patchFilesFolder, "Release.DeleteFiles.txt"));
+#if STARDIVE_DESKTOPVK
+            // Windows delete lists often include exe/config paths; only honor shared content.
+            Array<string> filtered = new();
+            foreach (string rel in filesToDelete)
+            {
+                if (IsDesktopVkSafeDeletePath(rel))
+                    filtered.Add(rel);
+                else
+                    Log.Write($"AutoPatcher: DesktopVK skip delete (not Content/Mods): {rel}");
+            }
+            filesToDelete = filtered;
+#endif
             int currentAction = 0;
+            int total = Math.Max(filesToDelete.Count, 1);
             foreach (string toRemoveRelPath in filesToDelete)
             {
                 string fullPath = Path.Combine(gameDir, toRemoveRelPath);
                 Log.Write($"RemoveFile: {toRemoveRelPath}");
                 SafeDelete(fullPath, toRemoveRelPath, tempDir);
-                p.SetProgress(ProgressBarElement.GetPercent(++currentAction, filesToDelete.Count));
+                p.SetProgress(ProgressBarElement.GetPercent(++currentAction, total));
             }
+            if (filesToDelete.Count == 0)
+                p.SetProgress(100);
 
-            AddProgressAndRunTaskOnNextFrame("Copying New Files", nextP => CopyNewFiles(patchFilesFolder, nextP));
+            AddProgressAndRunTaskOnNextFrame("Copying New Files",
+                nextP => CopyNewFiles(patchFilesFolder, nextP, deletedCount: filesToDelete.Count));
         }
         catch (Exception e)
         {
@@ -584,7 +592,143 @@ internal class AutoPatcher : PopupWindow
         return toRemove;
     }
 
-    void CopyNewFiles(string patchFilesFolder, ProgressBarElement ap)
+    /// <summary>
+    /// Written into the install directory after a DesktopVK content-bridge apply
+    /// (or after acknowledging a Windows-only binary patch). AutoUpdate and the
+    /// main-menu version string use max(assembly, this stamp) so we do not
+    /// re-prompt forever when StarDrive.dll was intentionally not replaced.
+    /// </summary>
+    public const string AppliedContentVersionFileName = "AppliedContentVersion.txt";
+
+    /// <returns>true if the stamp was written (or version empty / nothing to write).</returns>
+    public static bool WriteAppliedContentVersion(string gameDir, string version)
+    {
+        if (version.IsEmpty())
+            return true;
+        try
+        {
+            string path = Path.Combine(gameDir, AppliedContentVersionFileName);
+            File.WriteAllText(path, version.Trim() + Environment.NewLine);
+            Log.Write($"AutoPatcher: wrote {AppliedContentVersionFileName} = {version.Trim()}");
+            return true;
+        }
+        catch (Exception e)
+        {
+            Log.Warning($"AutoPatcher: failed to write {AppliedContentVersionFileName}: {e.Message}");
+            return false;
+        }
+    }
+
+    public static string TryReadAppliedContentVersion(string gameDir = null)
+    {
+        try
+        {
+            string path = Path.Combine(gameDir ?? Directory.GetCurrentDirectory(), AppliedContentVersionFileName);
+            if (!File.Exists(path))
+                return null;
+            foreach (string line in File.ReadAllLines(path))
+            {
+                string trimmed = line.Trim();
+                if (trimmed.Length > 0)
+                    return trimmed;
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Warning($"AutoPatcher: failed to read {AppliedContentVersionFileName}: {e.Message}");
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Prefer the higher of assembly informational version vs content stamp.
+    /// Keeps any assembly suffix after the first space (e.g. "jupiter-1.60").
+    /// </summary>
+    public static string MergeAssemblyVersionWithAppliedContent(string assemblyInformational, string appliedContentVersion)
+    {
+        if (assemblyInformational.IsEmpty())
+            return appliedContentVersion ?? "";
+        if (appliedContentVersion.IsEmpty())
+            return assemblyInformational;
+
+        string assemblyNum = assemblyInformational.Split(' ')[0];
+        string suffix = assemblyInformational.Length > assemblyNum.Length
+            ? assemblyInformational.Substring(assemblyNum.Length) // includes leading space
+            : "";
+
+        string stampNum = appliedContentVersion.Trim();
+        if (!Version.TryParse(assemblyNum, out var asmVer)
+            || !Version.TryParse(stampNum, out var stampVer)
+            || stampVer <= asmVer)
+        {
+            return assemblyInformational;
+        }
+
+        // Keep the stamp's original digit padding (Version.ToString() drops zeros).
+        return stampNum + suffix;
+    }
+
+    /// <summary>
+    /// DesktopVK may download the same Windows GitHub patch ZIP as WindowsDX.
+    /// Only shared Content/Mods (and a few root data texts) are safe to apply —
+    /// never WindowsDX managed assemblies, host/runtimeconfig, or natives.
+    /// </summary>
+    public static bool IsDesktopVkSafePatchPath(string relPath)
+    {
+        if (relPath.IsEmpty())
+            return false;
+
+        string p = relPath.Replace('\\', '/').TrimStart('/');
+        if (p.Contains("..", StringComparison.Ordinal) || Path.IsPathRooted(relPath))
+            return false;
+
+        if (p.Equals("Credits.txt", StringComparison.OrdinalIgnoreCase)
+            || p.Equals("upgrade-url.txt", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (p.StartsWith("Mods/", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (!p.StartsWith("Content/", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        // Keep existing DesktopVK .mp4; Windows ZIPs ship .wmv for Media Foundation.
+        if (p.StartsWith("Content/Video/", StringComparison.OrdinalIgnoreCase)
+            && p.EndsWith(".wmv", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        // DirectX effect siblings would overwrite / displace Vulkan MGFX; only Vulkan/.
+        if (IsUnderShaderTree(p))
+            return IsUnderVulkanShaderDir(p);
+
+        return true;
+    }
+
+    /// <summary>DesktopVK delete list: only paths under Content/ or Mods/ (no .. traversal).</summary>
+    public static bool IsDesktopVkSafeDeletePath(string relPath)
+    {
+        if (relPath.IsEmpty())
+            return false;
+        string p = relPath.Replace('\\', '/').TrimStart('/');
+        if (p.Contains("..", StringComparison.Ordinal) || Path.IsPathRooted(relPath))
+            return false;
+        return p.StartsWith("Content/", StringComparison.OrdinalIgnoreCase)
+            || p.StartsWith("Mods/", StringComparison.OrdinalIgnoreCase);
+    }
+
+    static bool IsUnderShaderTree(string normalizedRelPath)
+    {
+        return normalizedRelPath.StartsWith("Content/Effects/", StringComparison.OrdinalIgnoreCase)
+            || normalizedRelPath.StartsWith("Content/3DParticles/", StringComparison.OrdinalIgnoreCase);
+    }
+
+    static bool IsUnderVulkanShaderDir(string normalizedRelPath)
+    {
+        return normalizedRelPath.StartsWith("Content/Effects/Vulkan/", StringComparison.OrdinalIgnoreCase)
+            || normalizedRelPath.StartsWith("Content/3DParticles/Vulkan/", StringComparison.OrdinalIgnoreCase);
+    }
+
+    void CopyNewFiles(string patchFilesFolder, ProgressBarElement ap, int deletedCount)
     {
         try
         {
@@ -595,6 +739,9 @@ internal class AutoPatcher : PopupWindow
             var skipped = new Array<string>();
             int currentAction = 0;
             int lockedFiles = 0;
+            int copiedCount = 0;
+            int platformSkipped = 0;
+            int allowlistedCount = 0;
             // Per-file retry budget for stash-aside in MoveAndCreateDirs. Starts at 3 attempts
             // (100/200/300 ms escalating waits) — handles isolated AV scans. After 5 files have
             // exhausted retries we conclude the lock is systemic (AV scanning the whole patch
@@ -608,6 +755,17 @@ internal class AutoPatcher : PopupWindow
                 string srcFile = toAdd.FullName;
                 string relPath = srcFile.Replace(patchFilesFolder, "").TrimStart('\\', '/');
                 string dstFile = Path.Combine(gameDir, relPath);
+
+#if STARDIVE_DESKTOPVK
+                if (!IsDesktopVkSafePatchPath(relPath))
+                {
+                    Log.Write($"AutoPatcher: DesktopVK skip (Windows/binary/unsafe): {relPath}");
+                    platformSkipped++;
+                    ap.SetProgress(ProgressBarElement.GetPercent(++currentAction, filesToAdd.Length));
+                    continue;
+                }
+                allowlistedCount++;
+#endif
 
                 // Source can vanish between Dir.GetFiles enumeration and now — typically
                 // AV/Defender quarantining a freshly-extracted asset (esp. .png/.exe) or
@@ -627,6 +785,7 @@ internal class AutoPatcher : PopupWindow
                 try
                 {
                     SafeCopy(srcFile, dstFile, relPath, tempDir, maxRetries);
+                    copiedCount++;
                 }
                 catch (IOException e)
                 {
@@ -649,6 +808,57 @@ internal class AutoPatcher : PopupWindow
                 ap.SetProgress(ProgressBarElement.GetPercent(++currentAction, filesToAdd.Length));
             }
 
+#if STARDIVE_DESKTOPVK
+            if (platformSkipped > 0)
+                Log.Write($"AutoPatcher: DesktopVK skipped {platformSkipped} Windows/binary path(s)");
+
+            // Vanilla content-bridge only: mod applies use ActiveMod.Mod.Version, not this stamp.
+            bool mayStampVanilla = !IsMod;
+
+            if (allowlistedCount == 0 && deletedCount == 0)
+            {
+                // True Windows-binary-only ZIP — stamp so AutoUpdate stops looping.
+                if (mayStampVanilla && !WriteAppliedContentVersion(Directory.GetCurrentDirectory(), Info.Version))
+                {
+                    AddErrorMessageAndAllowExit(
+                        "Failed to record applied version",
+                        $"Could not write {AppliedContentVersionFileName}. AutoUpdate may offer this patch again.");
+                    return;
+                }
+                TryDeleteFolder(GetPatchOutputFolder());
+                AddErrorMessageAndAllowExit(
+                    mayStampVanilla
+                        ? "No Mac/Linux Content in this patch (marked applied)"
+                        : "No Mac/Linux Content in this mod patch",
+                    mayStampVanilla
+                        ? $"Version {Info.Version} is recorded so AutoUpdate will not ask again. " +
+                          "This release had no Content/Mods updates for DesktopVK — Windows binaries were skipped. " +
+                          "C# / native fixes need a new Mac/Linux DMG — see docs/cross-platform.md."
+                        : "This mod release had no Content/Mods files for DesktopVK. Try again later or update the mod manually.");
+                return;
+            }
+
+            if (copiedCount == 0 && deletedCount == 0)
+            {
+                // Allowlisted files existed but all failed (AV/locks) — do NOT stamp.
+                AddErrorMessageAndAllowExit(
+                    "Content update failed",
+                    $"{skipped.Count} allowlisted file(s) could not be copied (see blackbox.log). " +
+                    "AutoUpdate will offer this patch again — retry after closing other apps / AV scans.");
+                return;
+            }
+
+            if (mayStampVanilla
+                && !WriteAppliedContentVersion(Directory.GetCurrentDirectory(), Info.Version))
+            {
+                AddErrorMessageAndAllowExit(
+                    "Content copied but version stamp failed",
+                    $"Files were updated but {AppliedContentVersionFileName} could not be written. " +
+                    "AutoUpdate may offer this patch again.");
+                return;
+            }
+#endif
+
             // Apply succeeded — now safe to drop the staging cache. Crucially this only
             // runs on the SUCCESS path: if the loop above threw, the staging dir is
             // preserved so the user can re-trigger the patch and we resume against an
@@ -665,6 +875,18 @@ internal class AutoPatcher : PopupWindow
                     label.Color = Color.Yellow;
                 });
             }
+
+#if STARDIVE_DESKTOPVK
+            if (platformSkipped > 0 && copiedCount > 0)
+            {
+                RunOnNextFrame(() =>
+                {
+                    var label = ProgressSteps.AddLabel(
+                        "Content update applied (Mac/Linux binary unchanged)");
+                    label.Color = Color.Yellow;
+                });
+            }
+#endif
 
             RunOnNextFrame(() =>
             {

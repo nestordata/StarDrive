@@ -1,13 +1,24 @@
 #!/usr/bin/env bash
-# Convert game/Content/Video/*.wmv → sibling H.264/AAC .mp4 for DesktopVK FFmpeg playback.
+# Convert Content/Video/*.wmv → sibling H.264/AAC .mp4 for DesktopVK FFmpeg playback.
 # WindowsDX continues to use .wmv + Media Foundation.
 #
-# Usage: bash scripts/convert-wmv-to-mp4.sh [--force]
+# Usage:
+#   bash scripts/convert-wmv-to-mp4.sh [--force] [video_dir]
+# Default video_dir: game/Content/Video
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 VIDEO_DIR="${ROOT}/game/Content/Video"
 FORCE=0
-[[ "${1:-}" == "--force" ]] && FORCE=1
+for arg in "$@"; do
+  if [[ "$arg" == "--force" ]]; then
+    FORCE=1
+  elif [[ -d "$arg" ]]; then
+    VIDEO_DIR="$arg"
+  else
+    echo "ERROR: unknown arg or missing directory: $arg" >&2
+    exit 1
+  fi
+done
 
 if ! command -v ffmpeg >/dev/null 2>&1; then
   echo "ERROR: ffmpeg CLI not found (brew install ffmpeg)" >&2

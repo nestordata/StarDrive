@@ -172,6 +172,7 @@
     <Compile Include="TestImpactPredictor.cs" />
     <Compile Include="Serialization\YamlDeserializerTests.cs" />
     <Compile Include="Serialization\BinarySerializerTests.cs" />
+    <Compile Include="UI\AutoPatcherDesktopVkTests.cs" />
     <Compile Include="UI\AutoUpdateCheckerTests.cs" />
     <Compile Include="UI\MockGameScreen.cs" />
     <Compile Include="UI\MockInputProvider.cs" />

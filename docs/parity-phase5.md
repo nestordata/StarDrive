@@ -21,6 +21,8 @@ Phase 4 validates a playable Mac/Linux install. Phase 5 closes remaining gaps vs
 ## 5c — Updater / install UX
 
 - [x] Mac/Linux in-app update path (no Windows `runas` — `AutoPatcher.NeedsElevation` false on DesktopVK)
+- [x] DesktopVK content-bridge AutoUpdate: apply shared Content from Windows GitHub ZIPs; skip binaries/runtimeconfig (see [cross-platform.md](cross-platform.md) — Paths A/B/C)
+- [x] Maintainer bridge script [`scripts/apply-win-patch-content.sh`](../scripts/apply-win-patch-content.sh) for WMV→MP4 / Vulkan rebake overlays
 - [x] Code signing + notarization notes ([mac-notarization.md](mac-notarization.md))
 - [x] Linux desktop entry helper (`scripts/install-linux-desktop.sh`); AppImage noted as follow-up
 

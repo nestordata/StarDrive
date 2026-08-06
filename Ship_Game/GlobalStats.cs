@@ -348,6 +348,14 @@ public static class GlobalStats
                 .GetCustomAttributes(typeof(AssemblyInformationalVersionAttribute), false)
             as AssemblyInformationalVersionAttribute[])?[0].InformationalVersion ?? "";
 
+#if STARDIVE_DESKTOPVK
+        // Content-bridge AutoUpdate does not replace StarDrive.dll. Prefer the
+        // higher of assembly vs AppliedContentVersion.txt so the menu version
+        // and AutoUpdateChecker agree after a Content-only Windows patch.
+        string appliedContent = GameScreens.MainMenu.AutoPatcher.TryReadAppliedContentVersion();
+        Version = GameScreens.MainMenu.AutoPatcher.MergeAssemblyVersionWithAppliedContent(Version, appliedContent);
+#endif
+
         ExtendedVersion = $"Jupiter : {Version}";
         ExtendedVersionNoHash = $"Jupiter : {Version.Split(' ')[0]}";
             
