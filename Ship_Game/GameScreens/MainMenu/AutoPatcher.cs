@@ -740,8 +740,10 @@ internal class AutoPatcher : PopupWindow
             int currentAction = 0;
             int lockedFiles = 0;
             int copiedCount = 0;
+#if STARDIVE_DESKTOPVK
             int platformSkipped = 0;
             int allowlistedCount = 0;
+#endif
             // Per-file retry budget for stash-aside in MoveAndCreateDirs. Starts at 3 attempts
             // (100/200/300 ms escalating waits) — handles isolated AV scans. After 5 files have
             // exhausted retries we conclude the lock is systemic (AV scanning the whole patch

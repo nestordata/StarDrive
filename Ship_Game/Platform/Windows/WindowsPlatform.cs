@@ -37,11 +37,12 @@ public sealed class WindowsClipboard : IClipboard
 
 public sealed class WindowsNativeDialogs : INativeDialogs
 {
+    // Qualify WinForms enums — Ship_Game.MessageBoxButtons is a different type (Ok vs OK).
     public void ShowError(string title, string message) =>
-        MessageBox.Show(message, title, MessageBoxButtons.OK, MessageBoxIcon.Error);
+        MessageBox.Show(message, title, System.Windows.Forms.MessageBoxButtons.OK, MessageBoxIcon.Error);
 
     public void ShowInfo(string title, string message) =>
-        MessageBox.Show(message, title, MessageBoxButtons.OK, MessageBoxIcon.Information);
+        MessageBox.Show(message, title, System.Windows.Forms.MessageBoxButtons.OK, MessageBoxIcon.Information);
 }
 
 public sealed class WindowsAppProcess : IAppProcess
