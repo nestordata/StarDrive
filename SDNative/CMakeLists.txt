@@ -203,13 +203,35 @@ elseif(UNIX)
   )
 endif()
 
-find_package(PNG)
-find_package(ZLIB)
-if(PNG_FOUND AND ZLIB_FOUND)
-  target_link_libraries(SDNative PRIVATE PNG::PNG ZLIB::ZLIB)
+# libpng: on macOS statically link Homebrew's .a so libSDNative.dylib does not
+# carry an absolute /opt/homebrew install name (player machines have no brew).
+# zlib comes from the macOS SDK (/usr/lib/libz.1.dylib) and is always present.
+if(APPLE)
+  find_library(SDNATIVE_PNG_STATIC
+    NAMES libpng16.a libpng.a
+    PATHS
+      /opt/homebrew/opt/libpng/lib
+      /usr/local/opt/libpng/lib
+    NO_DEFAULT_PATH
+  )
+  if(SDNATIVE_PNG_STATIC)
+    target_link_libraries(SDNative PRIVATE "${SDNATIVE_PNG_STATIC}" z)
+    message(STATUS "libpng: static (self-contained) → ${SDNATIVE_PNG_STATIC}")
+  else()
+    message(FATAL_ERROR
+      "Static libpng required on macOS for self-contained player builds.\n"
+      "  brew install libpng\n"
+      "Expected libpng16.a under /opt/homebrew/opt/libpng/lib (Apple Silicon)")
+  endif()
 else()
-  message(WARNING "libpng/zlib not found via CMake — linking system png/z if available")
-  target_link_libraries(SDNative PRIVATE png z)
+  find_package(PNG)
+  find_package(ZLIB)
+  if(PNG_FOUND AND ZLIB_FOUND)
+    target_link_libraries(SDNative PRIVATE PNG::PNG ZLIB::ZLIB)
+  else()
+    message(WARNING "libpng/zlib not found via CMake — linking system png/z if available")
+    target_link_libraries(SDNative PRIVATE png z)
+  endif()
 endif()
 
 install(TARGETS SDNative LIBRARY DESTINATION lib RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)

@@ -5,6 +5,7 @@ DesktopVK video playback uses FFmpeg inside `libSDNative` (`SDNative/video/SDVid
 ## macOS arm64
 
 Tree: `macos/{lib,include}` — shared LGPL build (no GPL/nonfree), VideoToolbox enabled.
+X11/xcb are **disabled** so dylibs stay self-contained (no `/opt/homebrew` install names).
 
 Refresh / rebuild:
 
@@ -14,6 +15,7 @@ bash scripts/fetch-ffmpeg-macos.sh --force  # rebuild
 ```
 
 Runtime dylibs are copied next to `libSDNative.dylib` by `scripts/build-sdnative.sh` / `scripts/build-mac.sh`.
+`scripts/macos-check-dylib-deps.sh` fails the build if any shipped dylib still references Homebrew.
 
 ## License
 

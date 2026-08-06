@@ -42,9 +42,18 @@ fi
 
 if [[ "${ENABLE_FFMPEG}" == "ON" ]]; then
   FF_LIB="${ROOT}/SDNative/3rdparty/ffmpeg/macos/lib/libavformat.dylib"
+  FF_DIR="${ROOT}/SDNative/3rdparty/ffmpeg/macos/lib"
+  need_ffmpeg=0
   if [[ ! -f "${FF_LIB}" ]]; then
+    need_ffmpeg=1
+  elif find "${FF_DIR}" -name '*.dylib' -type f -exec otool -L {} + 2>/dev/null \
+      | grep -E '/opt/homebrew/|/usr/local/opt/' >/dev/null; then
+    echo "==> Vendored FFmpeg links Homebrew paths — rebuilding self-contained…"
+    need_ffmpeg=1
+  fi
+  if [[ "${need_ffmpeg}" -eq 1 ]]; then
     echo "==> Building vendored LGPL FFmpeg (macOS)…"
-    bash "${ROOT}/scripts/fetch-ffmpeg-macos.sh"
+    bash "${ROOT}/scripts/fetch-ffmpeg-macos.sh" --force
   fi
 fi
 
@@ -76,3 +85,6 @@ if [[ -d "${FF_DIR}" ]]; then
 fi
 codesign --force --sign - "${OUT_DIR}/libSDNative.dylib" 2>/dev/null || true
 echo "Installed ${OUT_DIR}/libSDNative.dylib"
+
+# Player machines have no Homebrew — refuse to ship absolute /opt/homebrew deps.
+bash "${ROOT}/scripts/macos-check-dylib-deps.sh" "${OUT_DIR}"

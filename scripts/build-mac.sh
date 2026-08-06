@@ -136,6 +136,9 @@ if [[ -x "${OUT}/StarDrive" ]]; then
   install_name_tool -add_rpath @executable_path "${OUT}/StarDrive" 2>/dev/null || true
 fi
 
+log "Verifying native dylibs are self-contained (no Homebrew paths)"
+bash "${ROOT}/scripts/macos-check-dylib-deps.sh" "${OUT}"
+
 log "Ad-hoc codesigning Mach-O in publish dir (before .app assemble)"
 find "${OUT}" -maxdepth 1 \( -name '*.dylib' -o -name 'lib*.so*' \) -type f -print0 \
   | while IFS= read -r -d '' lib; do
