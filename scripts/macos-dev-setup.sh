@@ -41,8 +41,8 @@ fi
 command -v brew >/dev/null 2>&1 || die "brew not on PATH after install"
 log "Homebrew: $(brew --prefix)"
 
-log "brew install cmake pkg-config python3 ffmpeg"
-brew install cmake pkg-config python3 ffmpeg
+log "brew install cmake pkg-config python3 ffmpeg libpng"
+brew install cmake pkg-config python3 ffmpeg libpng
 
 # --- .NET 8 SDK ---
 if ! command -v dotnet >/dev/null 2>&1 || ! dotnet --list-sdks 2>/dev/null | grep -q '^8\.'; then
