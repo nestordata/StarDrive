@@ -1,7 +1,8 @@
 #pragma once
 /**
- * Cross-platform shims for SDNative (Clang/GCC on macOS/Linux).
- * Force-included by CMake on non-MSVC. Windows SDNative.vcxproj is unchanged.
+ * Cross-platform shims for SDNative (exports, aligned alloc, sd_wchar).
+ * Force-included by CMake (-include) and by SDNative.vcxproj (ForcedIncludeFiles)
+ * so every TU sees sd_wchar / DLLAPI without per-file includes.
  */
 
 #include <cstddef>
