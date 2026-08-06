@@ -214,3 +214,7 @@ game/System.dll
 tools/DesktopVkSpike/bin/
 tools/DesktopVkSpike/obj/
 
+
+# Assimp debug dumps (do not commit)
+*.assbin
+*.assxml

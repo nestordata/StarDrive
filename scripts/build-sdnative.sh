@@ -5,6 +5,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BUILD_DIR="${ROOT}/SDNative/build-${OSTYPE:-host}"
 OUT_DIR="${1:-${ROOT}/game}"
 ENABLE_FBX="${SDNATIVE_ENABLE_FBX:-ON}"
+ENABLE_FFMPEG="${SDNATIVE_ENABLE_FFMPEG:-ON}"
 
 if [[ ! -f "${ROOT}/SDNative/ReCpp/src/rpp/strview.h" ]] || [[ ! -f "${ROOT}/SDNative/NanoMesh/src/Mesh.cpp" ]]; then
   echo "ERROR: SDNative submodules not checked out."
@@ -34,10 +35,19 @@ if [[ "$(uname -s)" == "Darwin" && "${ENABLE_FBX}" == "ON" ]]; then
   fi
 fi
 
+if [[ "$(uname -s)" == "Darwin" && "${ENABLE_FFMPEG}" == "ON" ]]; then
+  FF_LIB="${ROOT}/SDNative/3rdparty/ffmpeg/macos/lib/libavformat.dylib"
+  if [[ ! -f "${FF_LIB}" ]]; then
+    echo "==> Building vendored LGPL FFmpeg (macOS)…"
+    bash "${ROOT}/scripts/fetch-ffmpeg-macos.sh"
+  fi
+fi
+
 mkdir -p "${BUILD_DIR}" "${OUT_DIR}"
 cmake -S "${ROOT}/SDNative" -B "${BUILD_DIR}" \
   -DCMAKE_BUILD_TYPE=Release \
   -DSDNATIVE_ENABLE_FBX="${ENABLE_FBX}" \
+  -DSDNATIVE_ENABLE_FFMPEG="${ENABLE_FFMPEG}" \
   -DCMAKE_CXX_STANDARD=20
 JOBS="$(sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 4)"
 cmake --build "${BUILD_DIR}" -j"${JOBS}"
@@ -49,8 +59,31 @@ if [[ "$(uname)" == "Darwin" ]]; then
     codesign --force --sign - "${OUT_DIR}/libfbxsdk.dylib" 2>/dev/null || true
     echo "Installed ${OUT_DIR}/libfbxsdk.dylib"
   fi
+  FF_DIR="${ROOT}/SDNative/3rdparty/ffmpeg/macos/lib"
+  if [[ -d "${FF_DIR}" ]]; then
+    # Copy real dylibs + version symlinks so @rpath/libavcodec.61.dylib resolves.
+    for f in "${FF_DIR}"/libavutil*.dylib "${FF_DIR}"/libavcodec*.dylib \
+             "${FF_DIR}"/libavformat*.dylib "${FF_DIR}"/libswscale*.dylib \
+             "${FF_DIR}"/libswresample*.dylib; do
+      [[ -e "$f" ]] || continue
+      cp -a "$f" "${OUT_DIR}/"
+    done
+    echo "Installed FFmpeg dylibs → ${OUT_DIR}"
+  fi
+  codesign --force --sign - "${OUT_DIR}/libSDNative.dylib" 2>/dev/null || true
   echo "Installed ${OUT_DIR}/libSDNative.dylib"
 else
   cp -f "${BUILD_DIR}/libSDNative.so" "${OUT_DIR}/libSDNative.so"
+  if [[ -f "${ROOT}/SDNative/3rdparty/fbxsdk/linux/libfbxsdk.so" ]]; then
+    cp -f "${ROOT}/SDNative/3rdparty/fbxsdk/linux/libfbxsdk.so" "${OUT_DIR}/libfbxsdk.so"
+    echo "Installed ${OUT_DIR}/libfbxsdk.so"
+  fi
+  FF_DIR="${ROOT}/SDNative/3rdparty/ffmpeg/linux/lib"
+  if [[ -d "${FF_DIR}" ]]; then
+    cp -a "${FF_DIR}"/libavutil.so* "${FF_DIR}"/libavcodec.so* \
+          "${FF_DIR}"/libavformat.so* "${FF_DIR}"/libswscale.so* \
+          "${FF_DIR}"/libswresample.so* "${OUT_DIR}/" 2>/dev/null || true
+    echo "Installed FFmpeg shared libs → ${OUT_DIR}"
+  fi
   echo "Installed ${OUT_DIR}/libSDNative.so"
 fi

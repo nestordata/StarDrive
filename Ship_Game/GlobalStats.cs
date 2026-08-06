@@ -107,10 +107,9 @@ public static class GlobalStats
     // PERF global option to Disable asteroids for increased performance
     public static bool DisableAsteroids;
 
-    // Set TRUE by the Media Foundation probe at startup if VideoPlayer can't be
-    // constructed (e.g. Win10/11 N/KN editions without the codec stack). When
-    // true, ScreenMediaPlayer construction is skipped and GameLoadingScreen
-    // jumps straight to MainMenu without splash/loading videos.
+    // Set TRUE when the host video backend probe fails (Windows MF missing codecs,
+    // or DesktopVK SDVideo/FFmpeg unavailable / no .mp4 content). GameLoadingScreen
+    // skips splash; ScreenMediaPlayer honors this and skips VideoPlayer/SDVideo.
     public static bool VideoDisabled;
 
     // PERF this is a graphics performance toggle, disabling engine trails makes everything much faster

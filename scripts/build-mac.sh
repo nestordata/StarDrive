@@ -122,6 +122,19 @@ else
   log "WARN: libfbxsdk.dylib missing — FBX meshes need: bash scripts/fetch-fbxsdk-macos.sh"
 fi
 
+# FFmpeg LGPL dylibs for SDVideo (build-sdnative copies them into OUT already; refresh if missing)
+FF_DIR="${ROOT}/SDNative/3rdparty/ffmpeg/macos/lib"
+if [[ -d "${FF_DIR}" ]]; then
+  for f in "${FF_DIR}"/libavutil*.dylib "${FF_DIR}"/libavcodec*.dylib \
+           "${FF_DIR}"/libavformat*.dylib "${FF_DIR}"/libswscale*.dylib \
+           "${FF_DIR}"/libswresample*.dylib; do
+    [[ -e "$f" ]] || continue
+    cp -a "$f" "${OUT}/"
+  done
+elif ! ls "${OUT}"/libavformat*.dylib >/dev/null 2>&1; then
+  log "WARN: FFmpeg dylibs missing — videos need: bash scripts/fetch-ffmpeg-macos.sh"
+fi
+
 # Prefer @executable_path for dylib lookup next to the apphost.
 # install_name_tool invalidates the ad-hoc signature — re-sign immediately after.
 if [[ -x "${OUT}/StarDrive" ]]; then

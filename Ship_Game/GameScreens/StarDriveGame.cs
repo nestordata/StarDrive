@@ -93,10 +93,40 @@ namespace Ship_Game
         static void ProbeVideoBackend()
         {
 #if STARDIVE_DESKTOPVK
-            // Phase 4: Media Foundation VideoPlayer is Windows-only. Skip videos until Phase 5.
-            GlobalStats.VideoDisabled = true;
-            Log.Warning("DesktopVK: video playback stubbed (Phase 5 will restore cross-platform video).");
-            return;
+            // Phase 5b: FFmpeg SDVideo in libSDNative (H.264/AAC .mp4). MF VideoPlayer is Windows-only.
+            try
+            {
+                if (!Platform.DesktopVk.SdNativeVideoPlayer.IsSupported())
+                {
+                    GlobalStats.VideoDisabled = true;
+                    Log.Warning("DesktopVK: SDVideo/FFmpeg not available; videos disabled.");
+                    return;
+                }
+                // Prefer the tiny loading clip as a canary open.
+                string probe = Path.Combine("Content", "Video", "Loading 2.mp4");
+                if (!File.Exists(probe))
+                    probe = Path.Combine("Video", "Loading 2.mp4");
+                if (!File.Exists(probe))
+                {
+                    GlobalStats.VideoDisabled = true;
+                    Log.Warning("DesktopVK: no Content/Video/*.mp4 found; videos disabled. Run scripts/convert-wmv-to-mp4.sh");
+                    return;
+                }
+                using var player = new Platform.DesktopVk.SdNativeVideoPlayer();
+                if (!player.Open(Path.GetFullPath(probe)))
+                {
+                    GlobalStats.VideoDisabled = true;
+                    Log.Warning($"DesktopVK: SDVideoOpen failed for '{probe}'; videos disabled.");
+                    return;
+                }
+                GlobalStats.VideoDisabled = false;
+                Log.Info("DesktopVK: SDVideo/FFmpeg probe OK — videos enabled.");
+            }
+            catch (Exception ex)
+            {
+                GlobalStats.VideoDisabled = true;
+                Log.Warning($"DesktopVK: video probe failed; videos disabled: {ex.GetType().Name}: {ex.Message}");
+            }
 #else
             try
             {

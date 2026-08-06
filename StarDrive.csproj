@@ -625,6 +625,8 @@
     <Compile Include="Ship_Game\Platform\Windows\WindowsPlatform.cs" />
     <Compile Include="Ship_Game\Platform\DesktopVk\DesktopVkPlatform.cs" />
     <Compile Include="Ship_Game\Platform\DesktopVk\SimpleConfiguration.cs" />
+    <Compile Include="Ship_Game\Platform\DesktopVk\IVideoPlayback.cs" />
+    <Compile Include="Ship_Game\Platform\DesktopVk\SdNativeVideoPlayer.cs" />
     <Compile Include="Ship_Game\ExceptionViewer.DesktopVK.cs" />
     <Compile Include="Ship_Game\Audio\AudioDevices.DesktopVK.cs" />
     <Compile Include="Ship_Game\Audio\DesktopVk\MonoGamePlaybackEngine.cs" />

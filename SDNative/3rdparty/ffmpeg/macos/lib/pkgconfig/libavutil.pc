@@ -1,0 +1,14 @@
+prefix=/Users/alex/Projects/NestorData/StarDrive/SDNative/3rdparty/ffmpeg/macos
+exec_prefix=${prefix}
+libdir=/Users/alex/Projects/NestorData/StarDrive/SDNative/3rdparty/ffmpeg/macos/lib
+includedir=/Users/alex/Projects/NestorData/StarDrive/SDNative/3rdparty/ffmpeg/macos/include
+
+Name: libavutil
+Description: FFmpeg utility library
+Version: 59.39.100
+Requires: 
+Requires.private: 
+Conflicts:
+Libs: -L${libdir}  -lavutil 
+Libs.private: -pthread -lm -framework VideoToolbox -L/opt/homebrew/Cellar/libx11/1.8.12/lib -lX11 -framework CoreFoundation -framework CoreMedia -framework CoreVideo -framework CoreServices
+Cflags: -I${includedir}

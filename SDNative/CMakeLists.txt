@@ -9,6 +9,7 @@ endif()
 # same Mesh_Fbx.cpp path as Windows (FbxToOpenGL, materials, skinning).
 
 option(SDNATIVE_ENABLE_FBX "Link Autodesk FBX SDK" ON)
+option(SDNATIVE_ENABLE_FFMPEG "Link FFmpeg for DesktopVK video (SDVideo)" ON)
 option(SDNATIVE_ENABLE_MESH "Build NanoMesh / SdMesh (requires NanoMesh + ReCpp submodules)" ON)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -33,6 +34,7 @@ set(SDNATIVE_SOURCES
   util/image_utils.cpp
   util/math_utils.cpp
   util/os_utils.cpp
+  video/SDVideo.cpp
   3rdparty/lodepng/lodepng.cpp
   3rdparty/soil2/image_DXT.cpp
   3rdparty/soil2/image_helper.cpp
@@ -90,9 +92,15 @@ if(SDNATIVE_ENABLE_FBX AND SDNATIVE_ENABLE_MESH AND HAVE_NANOMESH)
     # Windows uses SDNative.vcxproj; CMake path is not the primary Windows build.
     set(SDNATIVE_FBX_READY TRUE)
   else()
-    message(WARNING
-      "SDNATIVE_ENABLE_FBX=ON on this platform but no Linux FBX runtime is vendored yet. "
-      "Building with NANOMESH_NO_FBX stubs.")
+    set(_fbx_so "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/fbxsdk/linux/libfbxsdk.so")
+    if(EXISTS "${_fbx_so}")
+      set(SDNATIVE_FBX_READY TRUE)
+      set(SDNATIVE_FBX_DYLIB "${_fbx_so}")
+    else()
+      message(WARNING
+        "SDNATIVE_ENABLE_FBX=ON but ${_fbx_so} missing. "
+        "Run: bash scripts/fetch-fbxsdk-linux.sh — building with NANOMESH_NO_FBX stubs.")
+    endif()
   endif()
 endif()
 
@@ -116,6 +124,13 @@ if(SDNATIVE_FBX_READY)
       INSTALL_RPATH "@loader_path;@loader_path/.."
     )
     message(STATUS "FBX SDK: enabled (macOS) → ${SDNATIVE_FBX_DYLIB}")
+  elseif(UNIX AND NOT APPLE AND SDNATIVE_FBX_DYLIB)
+    target_link_libraries(SDNative PRIVATE "${SDNATIVE_FBX_DYLIB}" xml2 z)
+    set_target_properties(SDNative PROPERTIES
+      BUILD_RPATH "$ORIGIN;$ORIGIN/.."
+      INSTALL_RPATH "$ORIGIN;$ORIGIN/.."
+    )
+    message(STATUS "FBX SDK: enabled (Linux) → ${SDNATIVE_FBX_DYLIB}")
   else()
     message(STATUS "FBX SDK: enabled")
   endif()
@@ -124,11 +139,66 @@ else()
   message(STATUS "FBX SDK: disabled (NANOMESH_NO_FBX)")
 endif()
 
+# FFmpeg (LGPL) for SDVideo — macOS arm64 vendored under 3rdparty/ffmpeg/macos
+set(SDNATIVE_FFMPEG_READY FALSE)
+set(SDNATIVE_FFMPEG_ROOT "")
+if(SDNATIVE_ENABLE_FFMPEG)
+  if(APPLE)
+    set(_ff_root "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/ffmpeg/macos")
+    if(EXISTS "${_ff_root}/include/libavformat/avformat.h"
+       AND EXISTS "${_ff_root}/lib/libavformat.dylib")
+      set(SDNATIVE_FFMPEG_READY TRUE)
+      set(SDNATIVE_FFMPEG_ROOT "${_ff_root}")
+    else()
+      message(WARNING
+        "SDNATIVE_ENABLE_FFMPEG=ON but ${_ff_root} incomplete. "
+        "Run: bash scripts/fetch-ffmpeg-macos.sh — building SDVideo stubs.")
+    endif()
+  elseif(UNIX AND NOT APPLE)
+    set(_ff_root "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/ffmpeg/linux")
+    if(EXISTS "${_ff_root}/include/libavformat/avformat.h"
+       AND EXISTS "${_ff_root}/lib/libavformat.so")
+      set(SDNATIVE_FFMPEG_READY TRUE)
+      set(SDNATIVE_FFMPEG_ROOT "${_ff_root}")
+    else()
+      message(WARNING
+        "SDNATIVE_ENABLE_FFMPEG=ON but Linux FFmpeg not vendored yet (${_ff_root}). "
+        "Building SDVideo stubs.")
+    endif()
+  endif()
+endif()
+
+if(SDNATIVE_FFMPEG_READY)
+  target_compile_definitions(SDNative PRIVATE SDNATIVE_ENABLE_FFMPEG=1)
+  target_include_directories(SDNative PRIVATE "${SDNATIVE_FFMPEG_ROOT}/include")
+  target_link_directories(SDNative PRIVATE "${SDNATIVE_FFMPEG_ROOT}/lib")
+  target_link_libraries(SDNative PRIVATE avformat avcodec avutil swscale swresample)
+  if(APPLE)
+    target_link_libraries(SDNative PRIVATE
+      "-framework VideoToolbox"
+      "-framework AudioToolbox"
+      "-framework CoreMedia"
+      "-framework CoreVideo"
+      "-framework CoreFoundation"
+      "-framework CoreServices"
+    )
+    set_target_properties(SDNative PROPERTIES
+      BUILD_RPATH "@loader_path;@loader_path/.."
+      INSTALL_RPATH "@loader_path;@loader_path/.."
+    )
+  endif()
+  message(STATUS "FFmpeg: enabled → ${SDNATIVE_FFMPEG_ROOT}")
+else()
+  target_compile_definitions(SDNative PRIVATE SDNATIVE_ENABLE_FFMPEG=0)
+  message(STATUS "FFmpeg: disabled (SDVideo stubs)")
+endif()
+
 target_include_directories(SDNative PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/spatial
   ${CMAKE_CURRENT_SOURCE_DIR}/SdMesh
   ${CMAKE_CURRENT_SOURCE_DIR}/util
+  ${CMAKE_CURRENT_SOURCE_DIR}/video
   ${CMAKE_CURRENT_SOURCE_DIR}/NanoMesh/src
   ${CMAKE_CURRENT_SOURCE_DIR}/NanoMesh/include
   ${CMAKE_CURRENT_SOURCE_DIR}/ReCpp/src

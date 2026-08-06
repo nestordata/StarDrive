@@ -121,10 +121,16 @@ internal class AutoPatcher : PopupWindow
 
     bool NeedsElevation()
     {
+#if !STARDIVE_WINDOWSDX
+        // DesktopVK (Mac/Linux): no Windows UAC / runas. Patches apply in-place under
+        // the install dir (typically .app/Contents/Resources/game or a user-writable tree).
+        return false;
+#else
         string gameDir = Directory.GetCurrentDirectory();
         if (IsMod) gameDir = Path.Combine(gameDir, GlobalStats.ModPath.Replace('/', '\\'));
         bool inProgramFiles = gameDir.Contains("Program Files");
         return inProgramFiles && !IsInRole(WindowsBuiltInRole.Administrator);
+#endif
     }
 
     // Persisted between the non-elevated download/unzip pass and the elevated
@@ -503,14 +509,16 @@ internal class AutoPatcher : PopupWindow
     string GetGameDirectory()
     {
         string gameDir = Directory.GetCurrentDirectory();
-        if (IsMod) gameDir = Path.Combine(gameDir, GlobalStats.ModPath.Replace('/', '\\'));
+        if (IsMod) gameDir = Path.Combine(gameDir, GlobalStats.ModPath.Replace('/', Path.DirectorySeparatorChar));
 
+#if STARDIVE_WINDOWSDX
         bool requiresElevation = gameDir.Contains("Program Files");
         if (requiresElevation)
         {
             if (!IsInRole(WindowsBuiltInRole.Administrator))
                 throw new InvalidOperationException("UAC Elevation failed: cannot overwrite StarDrive Program Files");
         }
+#endif
         return gameDir;
     }
 
