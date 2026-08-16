@@ -80,6 +80,7 @@
     <Compile Include="Data\Ship17DiagnosticTest.cs" />
     <Compile Include="Data\Ship17EndToEndTest.cs" />
     <Compile Include="Data\TestLocalizedText.cs" />
+    <Compile Include="Empires\ContactReportTests.cs" />
     <Compile Include="Empires\IncomingThreatDetectorTests.cs" />
     <Compile Include="ExoticSystems\ResearchStations.cs" />
     <Compile Include="Fleets\FleetFocusFireTests.cs" />

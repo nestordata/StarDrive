@@ -32,17 +32,20 @@ namespace Ship_Game
                 EventIcon.Size = new Vector2(40, 40);
 
             AddEventLabel(Event.StarDate.StarDateString(), 120, 60, Colors.Cream);
-            AddEventLabel(Event.Title, 230, 190, RowColor);
+            UILabel title = AddEventLabel(Event.Title, 230, 190, RowColor);
             AddEventLabel(Event.Message.Replace('\n', ' '), 700, 430, Color.LightGray);
+            if (Event.ContactReportId != 0)
+                title.Tooltip = GameText.ContactReportClickToReview;
         }
 
-        void AddEventLabel(string text, float sizeX, float relativeX, Color color)
+        UILabel AddEventLabel(string text, float sizeX, float relativeX, Color color)
         {
             string parsedText = NormalFont.ParseText(text, sizeX - 30);
             UILabel label     = Add(new UILabel(parsedText, NormalFont, color));
             label.Size        = new Vector2(sizeX, 80);
             label.TextAlign   = TextAlign.VerticalCenter;
             label.SetLocalPos(relativeX, 0);
+            return label;
         }
 
         public override void Draw(SpriteBatch batch, DrawTimes elapsed)

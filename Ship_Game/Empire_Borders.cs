@@ -94,8 +94,11 @@ public sealed partial class Empire
             ThreatMatrixUpdateTimer = ResetThreatMatrixSeconds;
 
             us.ThreatMatrixPerf.Start();
-            AI.ThreatMatrix.Update(new(time:ResetThreatMatrixSeconds));
+            Ship[] seenRivals = AI.ThreatMatrix.Update(new(time:ResetThreatMatrixSeconds));
             us.ThreatMatrixPerf.Stop();
+
+            if (isPlayer)
+                ContactReports.ProcessSightings(this, seenRivals, new(time:ResetThreatMatrixSeconds));
         }
 
         if (isPlayer)

@@ -22399,3 +22399,36 @@ CodexDiplomacyFederationsText:
  ENG: "It is possible to win at StarDrive by uniting all of the game's Empires into a single Federation. When one empire joins another empire in a Federation, the empire that is absorbed is \"defeated\" for game purposes. The Federation will now have access to all of the absorbed empires troops, technologies, ship hulls, and artifacts. If the player can absorb or defeat all of the empires in the game, then Victory will be achieved."
  RUS: "В StarDrive можно одержать победу, объединив все империи в игре в единую Федерацию. Когда империя вступает в состав Федерации, присоединяясь к другой империи, поглощенная империя с технической точки зрения считается \"побежденной\". С этого момента Федерация получает доступ ко всем войскам, технологиям, кораблям и артефактам поглощенной империи. Если игрок сумеет поглотить или победить все остальные империи в игре, он побеждает."
  PTB: "É possível vencer em StarDrive unindo todos os Impérios do jogo em uma única Federação. Quando um império se junta a outro império em uma Federação, o império absorvido é considerado \"derrotado\" para fins de jogo. A Federação passará a ter acesso a todas as tropas, tecnologias, cascos de naves e artefatos dos impérios absorvidos. Se o jogador conseguir absorver ou derrotar todos os impérios do jogo, a Vitória será alcançada."
+ContactReport:
+ ENG: "Contact Report"
+ PTB: "Relatório de Contato"
+ContactReportClickToReview:
+ ENG: "Click to review sighted designs"
+ PTB: "Clique para revisar os projetos avistados"
+ContactReportDesigns:
+ ENG: "designs"
+ PTB: "projetos"
+ContactReportShips:
+ ENG: "ships"
+ PTB: "naves"
+ContactReportInternalsKnown:
+ ENG: "Scanned"
+ PTB: "Escaneado"
+ContactReportHullOnly:
+ ENG: "Hull only"
+ PTB: "Apenas casco"
+ContactReportDeepSpace:
+ ENG: "Deep Space"
+ PTB: "Espaço Profundo"
+ContactReportReviewDesigns:
+ ENG: "Sighted Designs"
+ PTB: "Projetos Avistados"
+ContactReportNoInternals:
+ ENG: "Ship internals unknown. Infiltrate this empire to scan ships."
+ PTB: "Interior da nave desconhecido. Infiltre este império para escanear naves."
+EnableContactReports:
+ ENG: "Contact Reports"
+ PTB: "Relatórios de Contato"
+EnableContactReportsTip:
+ ENG: "When enabled, a contact report appears after your sensors lose sight of enemy combat ships. Click the report to review designs you actually saw."
+ PTB: "Quando ativado, um relatório de contato aparece depois que seus sensores perdem de vista naves de combate inimigas. Clique no relatório para revisar os projetos que você realmente viu."

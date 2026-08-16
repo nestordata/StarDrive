@@ -33,6 +33,7 @@ public sealed class Notification
     public bool Important;
     public string Title;
     public string LogMessage; // optional log override when Message contains UI-only text
+    public int ContactReportId; // 0 = none; click Important Events to reopen the report
 
     /** @return TRUE if input was captured */
     public bool HandleInput(InputState input, NotificationManager m)
@@ -72,6 +73,10 @@ public sealed class Notification
                     break;
                 case "SnapToShip":
                     m.SnapToShip(ReferencedItem1 as Ship);
+                    break;
+                case "ContactReport":
+                    if (ReferencedItem1 is Empires.Components.ContactReport report)
+                        m.ScreenManager.AddScreen(new GameScreens.ContactReport.ContactReportScreen(m.Screen, report));
                     break;
             }
             return true;

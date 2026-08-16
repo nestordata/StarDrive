@@ -14,12 +14,14 @@ namespace Ship_Game
     {
         readonly Menu2 Window;
         readonly Color Cream = Colors.Cream;
+        readonly UniverseScreen Universe;
         readonly ImportantNotification[] Events;
         readonly ScrollList<ImportantEventListItem> EventList;
         readonly Graphics.Font LargeFont = Fonts.Arial20Bold;
 
         public ImportantEventsScreen(UniverseScreen screen) : base(screen, toPause: null)
         {
+            Universe          = screen;
             Events            = screen.UState.GetImportantEvents();
             IsPopup           = true;
             TransitionOnTime  = 0.25f;
@@ -33,6 +35,8 @@ namespace Ship_Game
 
             EventList = Add(new ScrollList<ImportantEventListItem>(new RectF(x, y, w, h), 80));
             EventList.EnableItemHighlight = true;
+            if (HasContactReports())
+                EventList.OnClick = OpenContactReport;
 
             UILabel starDateLabel    = Add(new UILabel("Star Date", LargeFont, Cream));
             UILabel titleLabel       = Add(new UILabel("Title", LargeFont, Cream));
@@ -48,11 +52,34 @@ namespace Ship_Game
             descriptionLabel.TextAlign = TextAlign.HorizontalCenter;
         }
 
+        bool HasContactReports()
+        {
+            for (int i = 0; i < Events.Length; i++)
+            {
+                if (Events[i].ContactReportId != 0)
+                    return true;
+            }
+            return false;
+        }
+
         void PopulateEvents()
         {
             // newest first
             for (int i = Events.Length - 1; i >= 0; --i)
                 EventList.AddItem(new ImportantEventListItem(Events[i]));
+        }
+
+        void OpenContactReport(ImportantEventListItem item)
+        {
+            int reportId = item.Event.ContactReportId;
+            if (reportId == 0)
+                return;
+
+            var report = Universe.Player.ContactReports?.GetReport(reportId);
+            if (report == null)
+                return;
+
+            ScreenManager.AddScreen(new GameScreens.ContactReport.ContactReportScreen(Universe, report));
         }
 
         public override void LoadContent()

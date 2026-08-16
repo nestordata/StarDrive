@@ -90,6 +90,31 @@ namespace Ship_Game
             }, good ? "sd_ui_spy_win_02" : "sd_ui_spy_fail_02"); 
         }
 
+        public void AddContactReport(Empires.Components.ContactReport report)
+        {
+            string location = report.LocationName;
+            string message = $"{Localizer.Token(GameText.ContactReport)}: {location}\n" +
+                             $"{report.TotalDesigns} {Localizer.Token(GameText.ContactReportDesigns)} " +
+                             $"({report.TotalShips} {Localizer.Token(GameText.ContactReportShips)})\n" +
+                             Localizer.Token(GameText.ContactReportClickToReview);
+
+            AddNotification(new Notification
+            {
+                RelevantEmpire  = report.PrimaryEmpire,
+                Message         = message,
+                LogMessage      = $"{location}: {report.TotalDesigns} {Localizer.Token(GameText.ContactReportDesigns)}, {report.TotalShips} {Localizer.Token(GameText.ContactReportShips)}",
+                ReferencedItem1 = report,
+                IconPath        = report.Designs.NotEmpty && report.Designs[0].IconPath.NotEmpty()
+                                  ? report.Designs[0].IconPath
+                                  : "NewUI/icon_planet_terran_01_mid",
+                Action          = "ContactReport",
+                Important       = true,
+                Title           = Localizer.Token(GameText.ContactReport),
+                ContactReportId = report.Id,
+                Pause           = false
+            }, "sd_ui_notification_encounter");
+        }
+
         public void AddBeingInvadedNotification(SolarSystem beingInvaded, Empire invader, float strRatio)
         {
             string threatLevel = Localizer.Token(GameText.NthreatLevelVsOurForcesnthere);

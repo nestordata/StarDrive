@@ -280,6 +280,7 @@ namespace Ship_Game
             right.Padding = new Vector2(2f, 4f);
             right.AddCheckbox(() => GlobalStats.PauseOnNotification,          title: GameText.PauseOnNotifications, tooltip: GameText.PausesGameOnNotificationsClearing);
             right.AddCheckbox(() => GlobalStats.NotifyEnemyInSystemAfterLoad, title: GameText.AlertEnemyPresenceAfterLoad, tooltip: GameText.AddNotificationsRegardingEnemiesIn);
+            right.AddCheckbox(() => GlobalStats.EnableContactReports,         title: GameText.EnableContactReports, tooltip: GameText.EnableContactReportsTip);
             right.AddCheckbox(() => GlobalStats.AltArcControl,                title: GameText.KeyboardFireArcLocking, tooltip: GameText.WhenActiveArcsInThe);
             right.AddCheckbox(() => GlobalStats.ZoomTracking,                 title: GameText.ToggleZoomTracking, tooltip: GameText.ZoomWillCenterOnSelected);
             right.AddCheckbox(() => GlobalStats.AutoErrorReport,              title: GameText.AutomaticErrorReport, tooltip: GameText.SendAutomaticErrorReportsTo);

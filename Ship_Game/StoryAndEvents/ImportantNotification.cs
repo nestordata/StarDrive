@@ -13,16 +13,18 @@ public sealed class ImportantNotification
     [StarData] public readonly string Message;
     [StarData] public readonly Empire RelevantEmpire;
     [StarData] public readonly string IconPath;
+    [StarData] public readonly int ContactReportId;
 
     [StarDataConstructor]
     ImportantNotification() {}
 
     public ImportantNotification(float starDate, Notification n)
     {
-        StarDate       = starDate;
-        Title          = n.Title ?? "";
-        Message        = n.LogMessage ?? n.Message ?? "";
-        RelevantEmpire = n.RelevantEmpire;
-        IconPath       = n.IconPath;
+        StarDate         = starDate;
+        Title            = n.Title ?? "";
+        Message          = n.LogMessage ?? n.Message ?? "";
+        RelevantEmpire   = n.RelevantEmpire;
+        IconPath         = n.IconPath;
+        ContactReportId  = n.ContactReportId;
     }
 }

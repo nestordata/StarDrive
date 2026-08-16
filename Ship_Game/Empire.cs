@@ -60,6 +60,17 @@ namespace Ship_Game
         [StarData] public IncomingThreatDetector ThreatDetector;
         public IncomingThreat[] SystemsWithThreat => ThreatDetector.SystemsWithThreat;
 
+        [StarData] ContactReportTracker ContactReportsData;
+        public ContactReportTracker ContactReports
+        {
+            get
+            {
+                if (!isPlayer)
+                    return null;
+                return ContactReportsData ??= new ContactReportTracker();
+            }
+        }
+
         int TurnCount = 1;
 
         [StarData] public EmpireData data;

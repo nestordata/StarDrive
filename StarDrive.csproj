@@ -203,6 +203,8 @@
     <Compile Include="Ship_Game\Debug\TextDrawerComponent.cs" />
     <Compile Include="Ship_Game\EmpireExoticBonuses.cs" />
     <Compile Include="Ship_Game\Empires\Components\EmpireFirstContact.cs" />
+    <Compile Include="Ship_Game\Empires\Components\ContactReport.cs" />
+    <Compile Include="Ship_Game\Empires\Components\ContactReportTracker.cs" />
     <Compile Include="Ship_Game\Empires\Components\IncomingThreatDetector.cs" />
     <Compile Include="Ship_Game\Empire_Borders.cs" />
     <Compile Include="Ship_Game\Empire_ExoticResources.cs" />
@@ -234,6 +236,8 @@
     <Compile Include="Ship_Game\GameScreens\EmpirePatrolsScreen\EmpirePatrolsScreen.cs" />
     <Compile Include="Ship_Game\GameScreens\EmpirePatrolsScreen\EmpirePatrolsScreenListItem.cs" />
     <Compile Include="Ship_Game\GameScreens\EmpirePatrolsScreen\RenamePatrolPlanScreen.cs" />
+    <Compile Include="Ship_Game\GameScreens\ContactReport\ContactReportListItem.cs" />
+    <Compile Include="Ship_Game\GameScreens\ContactReport\ContactReportScreen.cs" />
     <Compile Include="Ship_Game\GameScreens\ImportantEvents\ImportantEventsScreen.cs" />
     <Compile Include="Ship_Game\GameScreens\ImportantEvents\ImportantEventListItem.cs" />
     <Compile Include="Ship_Game\GameScreens\Infiltration\EspionageLevelPanel.cs" />

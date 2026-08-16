@@ -171,6 +171,10 @@ public static class GlobalStats
     public static bool NotifyEnemyInSystemAfterLoad = true;
 
     // USER_EXPERIENCE
+    // contact / action reports after sensor contact ends. default ON
+    public static bool EnableContactReports = true;
+
+    // USER_EXPERIENCE
     // global option for Ships will try to keep their distance from nearby friends to prevent stacking
     public static bool EnableShipFlocking = true;
         
@@ -394,6 +398,7 @@ public static class GlobalStats
         GetSetting(config, "MaxDynamicLightSources", ref MaxDynamicLightSources);
         GetSetting(config, "SimulationFramesPerSecond", ref SimulationFramesPerSecond);
         GetSetting(config, "NotifyEnemyInSystemAfterLoad", ref NotifyEnemyInSystemAfterLoad);
+        GetSetting(config, "EnableContactReports", ref EnableContactReports);
 
         if (TryGetSetting(config, "MusicVolume", out int musicVol)) MusicVolume = musicVol / 100f;
         if (TryGetSetting(config, "EffectsVolume", out int fxVol)) EffectsVolume = fxVol / 100f;
@@ -607,6 +612,7 @@ public static class GlobalStats
         WriteSetting(config, "MaxDynamicLightSources", MaxDynamicLightSources);
         WriteSetting(config, "SimulationFramesPerSecond", SimulationFramesPerSecond);
         WriteSetting(config, "NotifyEnemyInSystemAfterLoad", NotifyEnemyInSystemAfterLoad);
+        WriteSetting(config, "EnableContactReports", EnableContactReports);
 
         WriteSetting(config, "MusicVolume", (int)(MusicVolume * 100));
         WriteSetting(config, "EffectsVolume", (int)(EffectsVolume * 100));

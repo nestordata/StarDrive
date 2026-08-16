@@ -19,6 +19,7 @@ namespace Ship_Game.GameScreens.ShipDesign
 
         IShipDesign SelectedDesign;
         DesignShip TempShip;
+        bool ShowInternals = true;
         ShipDesignStats Ds => TempShip.DesignStats;
         Graphics.Font TitleFont;
         Graphics.Font Font;
@@ -44,7 +45,7 @@ namespace Ship_Game.GameScreens.ShipDesign
             if (Visible)
             {
                 float size = GetSize();
-                ShowShip(design, new(leftOf.X - size*1.6f, leftOf.Y - size/4), size);
+                ShowShip(design, new(leftOf.X - size*1.6f, leftOf.Y - size/4), size, showInternals: true);
             }
         }
 
@@ -54,16 +55,27 @@ namespace Ship_Game.GameScreens.ShipDesign
             if (Visible)
             {
                 float size = GetSize();
-                ShowShip(design, new(topOf.X, topOf.Y - size - 20), size);
+                ShowShip(design, new(topOf.X, topOf.Y - size - 20), size, showInternals: true);
             }
         }
 
-        void ShowShip(IShipDesign design, Vector2 screenPos, float shipRectSize)
+        public void ShowAt(Vector2 pos, IShipDesign design, bool showInternals)
+        {
+            Visible = design != null;
+            if (Visible)
+            {
+                float size = GetSize();
+                ShowShip(design, pos, size, showInternals);
+            }
+        }
+
+        void ShowShip(IShipDesign design, Vector2 screenPos, float shipRectSize, bool showInternals)
         {
             screenPos = screenPos.RoundTo10();
             screenPos.X = Math.Max(100f, screenPos.X);
+            ShowInternals = showInternals;
 
-            if (SelectedDesign != design)
+            if (SelectedDesign != design || TempShip == null)
             {
                 try // we got some errors here, so try to handle it gracefully and just report error
                 {
@@ -107,7 +119,15 @@ namespace Ship_Game.GameScreens.ShipDesign
             var shipOverlay = new Rectangle((int)Right - size - 24, (int)Y + 28, size, size);
             new Menu2(Rect).Draw(batch, elapsed); // background with menu2 borders
 
-            s.RenderOverlay(batch, shipOverlay, showModules:true, drawHullBackground:true, moduleHealthColor:false, markLockedModules: true);
+            s.RenderOverlay(batch, shipOverlay, showModules: ShowInternals,
+                            drawHullBackground: true, moduleHealthColor: false, markLockedModules: ShowInternals);
+
+            if (!ShowInternals)
+            {
+                var pHint = new Vector2(X + 25, Y + 22);
+                batch.DrawString(TitleFont, s.Name, pHint, Color.White);
+                return;
+            }
             float mass          = s.Stats.GetMass(Player);
             float warpSpeed     = s.Stats.GetFTLSpeed(mass, Player);
             float subLightSpeed = s.Stats.GetSTLSpeed(mass, Player);

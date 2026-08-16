@@ -90,9 +90,10 @@ public sealed partial class ThreatMatrix
 
     /// <summary>
     /// Atomically updates the ThreatMatrix and
-    /// creates a new array of threat clusters
+    /// creates a new array of threat clusters.
+    /// Returns rival ships scanned since the last update (empty if none).
     /// </summary>
-    public void Update(FixedSimTime timeStep)
+    public Ship[] Update(FixedSimTime timeStep)
     {
         Ship[] ourShips = Owner.EmpireShips.OwnedShips;
         Ship[] ourProjectors = Owner.EmpireShips.OwnedProjectors;
@@ -113,17 +114,16 @@ public sealed partial class ThreatMatrix
         rivalClusters.CreateAndUpdateRivalClusters(Owner, ours, NonCombatShips.AsSpan());
         ThreatCluster[] rivals = rivalClusters.UpdateAndGetResults(timeStep, Owner, isOwnerCluster:false);
 
-        // 3. Update the list of clusters and UpdateAll ClustersMap
-        //    to handle deleted clusters
-        lock (Seen) Seen.Clear();
+        // Snapshot under the lock so contact tracking can run after we release it.
+        Ship[] seenRivals;
+        lock (Seen)
+        {
+            seenRivals = Seen.ToArr();
+            Seen.Clear();
+        }
         OurClusters = ours;
         RivalClusters = rivals;
         NonCombatShips.Clear();
-
-        // TODO: Based on playtesting, figure out if we need this anymore
-        //       the new GenericQtree design should make it unnecessary
-        // Cleans up the clusters map
-        //ThreatCluster[] allClusters = ours.Concat(rivals);
-        //ClustersMap.UpdateAll(allClusters);
+        return seenRivals;
     }
 }

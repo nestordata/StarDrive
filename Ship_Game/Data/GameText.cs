@@ -5908,5 +5908,27 @@ namespace Ship_Game
         MaxDynamicLightSources = -28,
         /// <summary>This will set an upper bound limit for dynamic 3D</summary>
         TT_MaxDynamicLightSources = -29,
+        /// <summary>Contact Report</summary>
+        ContactReport = -30,
+        /// <summary>Click to review sighted designs</summary>
+        ContactReportClickToReview = -31,
+        /// <summary>designs</summary>
+        ContactReportDesigns = -32,
+        /// <summary>ships</summary>
+        ContactReportShips = -33,
+        /// <summary>Scanned</summary>
+        ContactReportInternalsKnown = -34,
+        /// <summary>Hull only</summary>
+        ContactReportHullOnly = -35,
+        /// <summary>Deep Space</summary>
+        ContactReportDeepSpace = -36,
+        /// <summary>Sighted Designs</summary>
+        ContactReportReviewDesigns = -37,
+        /// <summary>Ship internals unknown. Infiltrate this empire to scan ships.</summary>
+        ContactReportNoInternals = -38,
+        /// <summary>Contact Reports</summary>
+        EnableContactReports = -39,
+        /// <summary>When enabled, a contact report appears after sensor contact</summary>
+        EnableContactReportsTip = -40,
     }
 }
